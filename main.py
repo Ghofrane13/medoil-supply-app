@@ -1,7 +1,7 @@
 
 import pandas as pd
 import numpy as np
- --- CHARGEMENT DU LOGO LOCAL ---
+ #--- CHARGEMENT DU LOGO LOCAL ---
 from PIL import Image # On importe l'outil pour gérer les images
 import os
 
