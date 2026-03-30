@@ -15,8 +15,8 @@ def moteur_remplissage_medoil(df_source):
 
     # A. Analyse ABC (Basée sur le Coût total annuel)
     df = df.sort_values(by='Cout total annuelle', ascending=False)
-    df['Cumul_Valeur'] = df['Cout_Revient'].cumsum()
-    total_valeur = df['Cout_Revient'].sum()
+    df['Cumul_Valeur'] = df['Coût de revient'].cumsum()
+    total_valeur = df['Coût de revient'].sum()
     df['%_Cumule'] = (df['Cumul_Valeur'] / total_valeur) * 100
     df['ABC_Calcule'] = df['%_Cumule'].apply(lambda x: 'A' if x <= 80 else ('B' if x <= 95 else 'C'))
 
