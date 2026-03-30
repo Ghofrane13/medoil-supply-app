@@ -7,7 +7,7 @@ import plotly.express as px
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="SupplyIQ — Supply Chain Manager",
+    page_title="medoil-supply-app",
     page_icon="📦",
     layout="wide",
     initial_sidebar_state="expanded",
