@@ -1,772 +1,616 @@
-
 import streamlit as st
 import math
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-import plotly.express as px
+import io
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 
-# ─── CONFIG ───────────────────────────────────────────────────────────────────
-st.set_page_config(
-    page_title="medoil-supply-app",
-    page_icon="📦",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
+st.set_page_config(page_title="SupplyIQ", page_icon="📦", layout="wide", initial_sidebar_state="expanded")
 
-# ─── CSS CUSTOM ───────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=DM+Serif+Display:ital@0;1&display=swap');
-
 html, body, [class*="css"] { font-family: 'Syne', sans-serif; }
+.formula-box { background:#0f1117; border-left:3px solid #3b82f6; border-radius:8px; padding:.9rem 1.1rem;
+    font-family:'DM Mono',monospace; font-size:.82rem; color:#8892a4; margin-bottom:1rem; line-height:1.7; }
+.f-eq { color:#60a5fa; font-weight:500; }
+.alert-critical { background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.3); border-radius:10px;
+    padding:1rem 1.2rem; margin-bottom:.7rem; color:#fca5a5; }
+.alert-warning  { background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.3); border-radius:10px;
+    padding:1rem 1.2rem; margin-bottom:.7rem; color:#fcd34d; }
+.alert-ok       { background:rgba(34,197,94,.08);  border:1px solid rgba(34,197,94,.3);  border-radius:10px;
+    padding:1rem 1.2rem; margin-bottom:.7rem; color:#86efac; }
+.alert-info     { background:rgba(20,184,166,.08); border:1px solid rgba(20,184,166,.3); border-radius:10px;
+    padding:1rem 1.2rem; margin-bottom:.7rem; color:#5eead4; }
+</style>""", unsafe_allow_html=True)
 
-.main-header {
-    background: linear-gradient(135deg, #0f1117 0%, #161b26 100%);
-    padding: 2rem 2.5rem;
-    border-radius: 16px;
-    border: 1px solid rgba(255,255,255,0.08);
-    margin-bottom: 1.5rem;
-}
-.main-header h1 {
-    font-family: 'DM Serif Display', serif;
-    font-size: 2.4rem;
-    color: #e8eaf0;
-    margin: 0 0 0.5rem 0;
-}
-.main-header h1 em { color: #60a5fa; font-style: italic; }
-.main-header p { color: #8892a4; font-size: 1rem; margin: 0; }
-
-.kpi-card {
-    background: #161b26;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
-    padding: 1.2rem 1.4rem;
-    text-align: center;
-}
-.kpi-card .kpi-label { font-size: 0.7rem; color: #5a6478; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.4rem; }
-.kpi-card .kpi-value { font-family: 'DM Mono', monospace; font-size: 1.8rem; font-weight: 500; color: #e8eaf0; }
-.kpi-card .kpi-unit { font-size: 0.7rem; color: #5a6478; margin-top: 0.2rem; }
-
-.formula-box {
-    background: #0f1117;
-    border-left: 3px solid #3b82f6;
-    border-radius: 8px;
-    padding: 0.9rem 1.1rem;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.82rem;
-    color: #8892a4;
-    margin-bottom: 1rem;
-    line-height: 1.7;
-}
-.formula-box .f-eq { color: #60a5fa; font-weight: 500; }
-
-.alert-critical {
-    background: rgba(239,68,68,0.08);
-    border: 1px solid rgba(239,68,68,0.3);
-    border-radius: 10px;
-    padding: 1rem 1.2rem;
-    margin-bottom: 0.7rem;
-    color: #fca5a5;
-}
-.alert-warning {
-    background: rgba(245,158,11,0.08);
-    border: 1px solid rgba(245,158,11,0.3);
-    border-radius: 10px;
-    padding: 1rem 1.2rem;
-    margin-bottom: 0.7rem;
-    color: #fcd34d;
-}
-.alert-ok {
-    background: rgba(34,197,94,0.08);
-    border: 1px solid rgba(34,197,94,0.3);
-    border-radius: 10px;
-    padding: 1rem 1.2rem;
-    margin-bottom: 0.7rem;
-    color: #86efac;
-}
-.alert-info {
-    background: rgba(20,184,166,0.08);
-    border: 1px solid rgba(20,184,166,0.3);
-    border-radius: 10px;
-    padding: 1rem 1.2rem;
-    margin-bottom: 0.7rem;
-    color: #5eead4;
-}
-.score-badge {
-    display: inline-block;
-    padding: 0.3rem 0.9rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-.section-card {
-    background: #161b26;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 14px;
-    padding: 1.5rem;
-    margin-bottom: 1.2rem;
-}
-.divider { border-top: 1px solid rgba(255,255,255,0.08); margin: 1.2rem 0; }
-</style>
-""", unsafe_allow_html=True)
-
-# ─── SIDEBAR ─────────────────────────────────────────────────────────────────
+# ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## 📦 SupplyIQ")
-    st.markdown("<p style='color:#8892a4; font-size:0.82rem; margin-top:-10px;'>Outil Supply Chain Manager</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#8892a4;font-size:.82rem;margin-top:-10px;'>Supply Chain Manager</p>", unsafe_allow_html=True)
     st.divider()
-    page = st.radio(
-        "Navigation",
-        ["🏠 Accueil", "⚙️ Calculateurs", "🏭 Processus fournisseurs", "🔔 Alertes stock"],
-        label_visibility="collapsed"
-    )
+    page = st.radio("Nav", ["🏠 Accueil","📥 Import & Calcul automatique",
+                             "⚙️ Calculateurs","🏭 Processus fournisseurs","🔔 Alertes stock"],
+                    label_visibility="collapsed")
     st.divider()
-    st.markdown("<p style='color:#5a6478; font-size:0.75rem;'>v2.0 · Supply Chain Manager</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#5a6478;font-size:.75rem;'>v2.0 · Supply Chain Manager</p>", unsafe_allow_html=True)
 
-# ─── HELPERS ─────────────────────────────────────────────────────────────────
+# ── Helpers ───────────────────────────────────────────────────────────────────
 def fmt(n, d=1):
-    if n is None or (isinstance(n, float) and (math.isnan(n) or math.isinf(n))):
-        return "—"
+    if n is None or (isinstance(n, float) and (math.isnan(n) or math.isinf(n))): return "—"
     return f"{n:,.{d}f}"
 
 def fmtInt(n):
-    if n is None or (isinstance(n, float) and (math.isnan(n) or math.isinf(n))):
-        return "—"
+    if n is None or (isinstance(n, float) and (math.isnan(n) or math.isinf(n))): return "—"
     return f"{round(n):,}"
 
-def metric_card(label, value, unit, delta=None, color="#3b82f6"):
-    delta_html = f"<div style='font-size:0.7rem; color:{color}; margin-top:4px;'>{delta}</div>" if delta else ""
-    return f"""
-    <div style='background:#1e2535; border:1px solid rgba(255,255,255,0.1); border-radius:12px;
-                padding:1rem 1.2rem; text-align:center; border-top: 3px solid {color};'>
-        <div style='font-size:0.65rem; color:#5a6478; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.4rem;'>{label}</div>
-        <div style='font-family:"DM Mono",monospace; font-size:1.6rem; font-weight:500; color:#e8eaf0;'>{value}</div>
-        <div style='font-size:0.68rem; color:#5a6478; margin-top:3px;'>{unit}</div>
-        {delta_html}
-    </div>"""
+def mcard(label, value, unit, delta=None, color="#3b82f6"):
+    dh = f"<div style='font-size:.7rem;color:{color};margin-top:4px'>{delta}</div>" if delta else ""
+    return f"""<div style='background:#1e2535;border:1px solid rgba(255,255,255,.1);border-radius:12px;
+        padding:1rem 1.2rem;text-align:center;border-top:3px solid {color}'>
+        <div style='font-size:.65rem;color:#5a6478;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.4rem'>{label}</div>
+        <div style='font-family:"DM Mono",monospace;font-size:1.6rem;font-weight:500;color:#e8eaf0'>{value}</div>
+        <div style='font-size:.68rem;color:#5a6478;margin-top:3px'>{unit}</div>{dh}</div>"""
 
-def formula_box(title, formula, details):
-    return f"""
-    <div class='formula-box'>
-        <div style='font-size:0.65rem; color:#5a6478; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;'>{title}</div>
-        <span class='f-eq'>{formula}</span><br/>
-        <span style='color:#5a6478;'>{details}</span>
-    </div>"""
+def fbox(title, formula, details):
+    return f"<div class='formula-box'><div style='font-size:.65rem;color:#5a6478;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px'>{title}</div><span class='f-eq'>{formula}</span><br/><span style='color:#5a6478'>{details}</span></div>"
 
-def score_color(score):
-    if score >= 85: return "#22c55e"
-    if score >= 70: return "#14b8a6"
-    if score >= 55: return "#f59e0b"
-    return "#ef4444"
+def sc(s): return "#22c55e" if s>=85 else "#14b8a6" if s>=70 else "#f59e0b" if s>=55 else "#ef4444"
+def sl(s): return "Excellent" if s>=85 else "Bon" if s>=70 else "Moyen" if s>=55 else "Insuffisant"
 
-def score_label(score):
-    if score >= 85: return "Excellent"
-    if score >= 70: return "Bon"
-    if score >= 55: return "Moyen"
-    return "Insuffisant"
+def dark_layout():
+    return dict(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#8892a4", family="Syne"),
+                legend=dict(bgcolor="rgba(0,0,0,0)", bordercolor="rgba(255,255,255,.1)", borderwidth=1),
+                margin=dict(t=20, b=10, l=0, r=0))
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# PAGE : ACCUEIL
-# ═══════════════════════════════════════════════════════════════════════════════
+# ── Calculs SC ────────────────────────────────────────────────────────────────
+def calc_ss(conso_mois, z=1.65, lt_mois=1.0, variab=0.15):
+    d_j = conso_mois / 30
+    lt_j = lt_mois * 30
+    sigma_d = conso_mois * variab
+    return round(z * math.sqrt(lt_j * sigma_d**2 + d_j**2 * (lt_mois * 30 * 0.05)**2))
+
+def calc_eoq(conso_an, cout_unit, sc_cost=150, taux=0.20):
+    if cout_unit <= 0 or conso_an <= 0: return 0, 0, 0
+    h = taux * cout_unit
+    eoq = math.sqrt(2 * conso_an * sc_cost / h)
+    nb = conso_an / eoq
+    ct = nb * sc_cost + (eoq / 2) * h
+    return round(eoq), round(nb, 1), round(ct, 2)
+
+def calc_pr(conso_mois, lt_mois, ss):
+    return round((conso_mois / 30) * (lt_mois * 30) + ss)
+
+# ── Export Excel ──────────────────────────────────────────────────────────────
+def build_excel(df_result):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Calculs Supply Chain"
+    thin = Side(style="thin", color="BFBFBF")
+    brd  = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    def hdr(cell, val, bg):
+        cell.value = val
+        cell.font = Font(bold=True, size=9, name="Arial")
+        cell.fill = PatternFill("solid", start_color=bg)
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = brd
+
+    def dat(cell, val, nf=None):
+        cell.value = val
+        cell.font = Font(size=9, name="Arial")
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = brd
+        if nf: cell.number_format = nf
+
+    # Row 1 — group headers
+    groups = [(1,3,"Produit","D9E1F2"),(4,7,"Fournisseur","FFF2CC"),
+              (8,9,"Demand","D9E1F2"),(10,12,"EOQ","E2EFDA"),(13,15,"SS","FCE4D6")]
+    for c1,c2,label,bg in groups:
+        ws.merge_cells(start_row=1,start_column=c1,end_row=1,end_column=c2)
+        hdr(ws.cell(1,c1), label, bg)
+
+    # Row 2 — column headers
+    hdrs = [("Code article","D9E1F2"),("Description Article","D9E1F2"),("Classe","D9E1F2"),
+            ("Fournisseur","FFF2CC"),("Délai livraison (mois)","FFF2CC"),
+            ("Incertitude fournisseur","FFF2CC"),("Délai de Sécurité (j)","FFF2CC"),
+            ("ABC","D9E1F2"),("XYZ","D9E1F2"),
+            ("EOQ","E2EFDA"),("MOQ","E2EFDA"),("Diff MOQ et EOQ","E2EFDA"),
+            ("Stock de sécurité","FCE4D6"),("Coût stock de sécurité","FCE4D6"),("Point de commande","FCE4D6")]
+    for col,(label,bg) in enumerate(hdrs,1):
+        hdr(ws.cell(2,col), label, bg)
+
+    # Data rows
+    fmts = [None,None,None,None,"0.0","0%","0",None,None,"#,##0","#,##0","#,##0","#,##0","#,##0.00","#,##0"]
+    for i, row in df_result.iterrows():
+        r = i + 3
+        vals = [row.get("Code article",""), row.get("Description Article",""), row.get("Classe",""),
+                row.get("Fournisseur",""), row.get("Délai livraison (mois)",""),
+                row.get("Incertitude",0.15), round(row.get("Délai livraison (mois)",1)*30) if row.get("Délai livraison (mois)") else "",
+                row.get("ABC",""), row.get("XYZ",""),
+                row.get("EOQ",0), row.get("MOQ",""), row.get("Diff MOQ EOQ",""),
+                row.get("Stock sécurité",0), row.get("Coût SS",0), row.get("Point de commande",0)]
+        for col,(val,nf) in enumerate(zip(vals,fmts),1):
+            dat(ws.cell(r,col), val, nf)
+
+    # Column widths
+    for col,w in enumerate([12,32,8,20,14,14,12,6,6,10,10,14,14,18,16],1):
+        ws.column_dimensions[get_column_letter(col)].width = w
+    ws.row_dimensions[1].height = 20
+    ws.row_dimensions[2].height = 42
+    ws.freeze_panes = "A3"
+
+    # Sheet 2 — source data
+    ws2 = wb.create_sheet("Données sources")
+    src_hdrs = ["Code article","Description Article","Classe","Stock sécu. (fichier)",
+                "Consommation/mois","Coût de revient","Consommation/an","Coût total annuel",
+                "SS calculé","EOQ calculé","Point de commande"]
+    for col,h in enumerate(src_hdrs,1):
+        c = ws2.cell(1,col)
+        c.value = h; c.font = Font(bold=True,size=9,name="Arial")
+        c.fill = PatternFill("solid",start_color="D9E1F2")
+        c.alignment = Alignment(horizontal="center",wrap_text=True); c.border = brd
+        ws2.column_dimensions[get_column_letter(col)].width = 18
+    for i,row in df_result.iterrows():
+        r = i + 2
+        vals2 = [row.get("Code article"), row.get("Description Article"), row.get("Classe"),
+                 row.get("SS existant",""), row.get("Conso mois",""), row.get("Coût revient",""),
+                 row.get("Conso an",""), row.get("Coût total an",""),
+                 row.get("Stock sécurité",""), row.get("EOQ",""), row.get("Point de commande","")]
+        for col,val in enumerate(vals2,1):
+            c = ws2.cell(r,col); c.value = val
+            c.font = Font(size=9,name="Arial"); c.alignment = Alignment(horizontal="center"); c.border = brd
+
+    buf = io.BytesIO()
+    wb.save(buf); buf.seek(0)
+    return buf
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# PAGE ACCUEIL
+# ════════════════════════════════════════════════════════════════════════════════
 if page == "🏠 Accueil":
     st.markdown("""
-    <div class='main-header'>
-        <div style='font-size:0.7rem; color:#60a5fa; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:10px;'>
-            Outil supply chain manager · v2.0
-        </div>
-        <h1>Pilotez votre <em>supply chain</em><br/>avec précision</h1>
-        <p>Calculez vos indicateurs clés, évaluez vos processus d'achat et anticipez les ruptures de stock.</p>
-    </div>
-    """, unsafe_allow_html=True)
+    <div style='background:linear-gradient(135deg,#0f1117,#161b26);padding:2rem 2.5rem;border-radius:16px;
+         border:1px solid rgba(255,255,255,.08);margin-bottom:1.5rem'>
+        <div style='font-size:.7rem;color:#60a5fa;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px'>
+            Outil supply chain manager · v2.0</div>
+        <h1 style='font-family:"DM Serif Display",serif;font-size:2.2rem;color:#e8eaf0;margin:0 0 .4rem'>
+            Pilotez votre <em style='color:#60a5fa'>supply chain</em><br/>avec précision</h1>
+        <p style='color:#8892a4;font-size:.95rem;margin:0'>
+            Importez votre Excel, calculez automatiquement EOQ, SS et points de commande, exportez le tableau rempli.</p>
+    </div>""", unsafe_allow_html=True)
 
     cols = st.columns(4)
-    modules = [
-        ("📦", "Stock de sécurité", "Calcul selon la méthode statistique avec variabilité de la demande et du délai"),
-        ("📐", "Quantité économique", "Modèle de Wilson (EOQ) — minimise le coût total logistique"),
-        ("📊", "Indicateurs clés", "Taux de rotation, couverture, taux de service, coût logistique"),
-        ("🔄", "Point de réappro.", "Seuil de déclenchement des commandes selon le lead time"),
-    ]
-    for col, (icon, title, desc) in zip(cols, modules):
+    mods = [("📥","Import & Calcul auto","Importez votre fichier Excel source et générez le tableau rempli à télécharger"),
+            ("📐","EOQ / Wilson","Quantité économique — minimise le coût total logistique avec courbe interactive"),
+            ("📦","Stock de sécurité","Formule complète avec variabilité de la demande et du délai fournisseur"),
+            ("🔔","Alertes stock","Surveillance des niveaux et alertes rupture par article en temps réel")]
+    for col,(ic,ti,de) in zip(cols,mods):
         with col:
-            st.markdown(f"""
-            <div style='background:#161b26; border:1px solid rgba(255,255,255,0.08); border-radius:12px;
-                        padding:1.2rem; cursor:pointer; transition:all 0.2s;'>
-                <div style='font-size:1.5rem; margin-bottom:8px;'>{icon}</div>
-                <div style='font-size:0.9rem; font-weight:600; color:#e8eaf0; margin-bottom:6px;'>{title}</div>
-                <div style='font-size:0.78rem; color:#5a6478; line-height:1.5;'>{desc}</div>
-            </div>""", unsafe_allow_html=True)
+            st.markdown(f"<div style='background:#161b26;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:1.2rem'>"
+                        f"<div style='font-size:1.5rem;margin-bottom:8px'>{ic}</div>"
+                        f"<div style='font-size:.9rem;font-weight:600;color:#e8eaf0;margin-bottom:6px'>{ti}</div>"
+                        f"<div style='font-size:.78rem;color:#5a6478;line-height:1.5'>{de}</div></div>", unsafe_allow_html=True)
+    st.divider()
+    st.info("👈 Commencez par **📥 Import & Calcul automatique** pour charger votre fichier Excel.")
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# PAGE IMPORT & CALCUL AUTOMATIQUE
+# ════════════════════════════════════════════════════════════════════════════════
+elif page == "📥 Import & Calcul automatique":
+    st.markdown("## 📥 Import & Calcul automatique")
+    st.markdown("<p style='color:#8892a4'>Importez votre fichier — EOQ, SS et point de commande calculés automatiquement pour chaque article</p>", unsafe_allow_html=True)
+
+    with st.expander("📋 Colonnes attendues dans votre fichier Excel"):
+        st.markdown("""
+| Colonne | Obligatoire | Description |
+|---|---|---|
+| `Code article` | ✅ | Identifiant unique |
+| `Description Article` | ✅ | Désignation |
+| `Classe` | — | MP, SF, PF… |
+| `Consommation / mois` | ✅ | Consommation mensuelle moyenne |
+| `Coût de revient` | ✅ | Coût unitaire (TND) |
+| `Consommation/ an` | — | Calculée si absente |
+| `Stock Sécurité` | — | SS existant (pour comparaison) |
+| `Cout total annuelle` | — | Affiché dans le rapport |
+| `Fournisseur` | — | Repris dans l'export |
+| `Délai de livraison` | — | En mois (sinon valeur par défaut) |
+| `MOQ` / `Taille de lot` | — | Minimum order quantity |
+""")
+
+    st.markdown("#### ⚙️ Paramètres de calcul globaux")
+    c1,c2,c3,c4,c5 = st.columns(5)
+    with c1: p_z_opt = st.selectbox("Niveau de service", ["90% (Z=1.28)","95% (Z=1.65)","97.5% (Z=1.96)","99% (Z=2.33)"], index=1)
+    with c2: p_lt    = st.number_input("Délai défaut (mois)", value=1.0, min_value=0.1, step=0.5)
+    with c3: p_sc    = st.number_input("Coût passation (TND)", value=150.0, min_value=1.0, step=10.0)
+    with c4: p_taux  = st.number_input("Taux stockage (%)", value=20.0, min_value=1.0, step=1.0)
+    with c5: p_var   = st.number_input("Variabilité demande (%)", value=15.0, min_value=1.0, step=1.0)
+
+    Z = {"90% (Z=1.28)":1.28,"95% (Z=1.65)":1.65,"97.5% (Z=1.96)":1.96,"99% (Z=2.33)":2.33}[p_z_opt]
 
     st.divider()
-    st.markdown("### 📌 Démarrage rapide")
-    st.info("👈 Utilisez la **barre latérale** pour naviguer entre les modules. Commencez par **⚙️ Calculateurs** pour saisir vos données.")
+    st.markdown("#### 📂 Chargement du fichier")
+    uploaded = st.file_uploader("Déposez votre fichier Excel (.xlsx / .xls)", type=["xlsx","xls"])
+    use_demo = st.checkbox("Utiliser les données de démo (votre format)", value=not bool(uploaded))
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# PAGE : CALCULATEURS
-# ═══════════════════════════════════════════════════════════════════════════════
-elif page == "⚙️ Calculateurs":
-    st.markdown("## ⚙️ Calculateurs Supply Chain")
-    st.markdown("<p style='color:#8892a4;'>Saisissez vos données — les résultats se calculent automatiquement</p>", unsafe_allow_html=True)
+    df_source = None
 
-    tab_ss, tab_eoq, tab_kpi, tab_rp = st.tabs([
-        "📦 Stock de sécurité",
-        "📐 Quantité économique (EOQ)",
-        "📊 KPIs stock",
-        "🔄 Point de réappro."
-    ])
+    if uploaded:
+        try:
+            all_sheets = pd.read_excel(uploaded, sheet_name=None, header=None)
+            names = list(all_sheets.keys())
+            sel = names[0] if len(names)==1 else st.selectbox("Choisir la feuille", names)
+            raw = all_sheets[sel]
 
-    # ── STOCK DE SÉCURITÉ ────────────────────────────────────────────────────
-    with tab_ss:
-        st.markdown(formula_box(
-            "Formule",
-            "SS = Z × σD × √LT",
-            "Z = facteur de service · σD = écart-type demande · LT = délai fournisseur (jours)"
-        ), unsafe_allow_html=True)
+            # Détecter la ligne d'en-tête
+            hrow = 0
+            for i, row in raw.iterrows():
+                row_str = " ".join([str(v).lower() for v in row if pd.notna(v)])
+                if any(k in row_str for k in ["code","description","article","consommation"]):
+                    hrow = i; break
 
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            ss_demand = st.number_input("Demande moyenne (u/jour)", value=50.0, min_value=0.0, step=1.0, key="ss_d")
-            ss_sigma  = st.number_input("Écart-type demande (σD)", value=8.0, min_value=0.0, step=0.5, key="ss_s")
-        with col2:
-            ss_lt     = st.number_input("Délai fournisseur moyen (jours)", value=7.0, min_value=0.0, step=1.0, key="ss_lt")
-            ss_slt    = st.number_input("Écart-type du délai (σLT)", value=1.5, min_value=0.0, step=0.1, key="ss_slt")
-        with col3:
-            ss_z_opt  = st.selectbox("Niveau de service cible", ["90% (Z=1.28)", "95% (Z=1.65)", "97.5% (Z=1.96)", "99% (Z=2.33)", "99.5% (Z=2.58)"], index=1)
-            ss_cost   = st.number_input("Coût unitaire (TND)", value=25.0, min_value=0.0, step=1.0, key="ss_cu")
+            df_raw = pd.read_excel(uploaded, sheet_name=sel, header=hrow)
+            df_raw.columns = [str(c).strip() for c in df_raw.columns]
+            df_raw = df_raw.dropna(how="all")
 
-        z_map = {"90% (Z=1.28)": 1.28, "95% (Z=1.65)": 1.65, "97.5% (Z=1.96)": 1.96, "99% (Z=2.33)": 2.33, "99.5% (Z=2.58)": 2.58}
-        Z = z_map[ss_z_opt]
+            # Mapping flexible
+            cmap = {}
+            for col in df_raw.columns:
+                cl = col.lower().strip()
+                if "code" in cl and "article" in cl:                      cmap["Code article"] = col
+                elif "description" in cl or "désignation" in cl:          cmap["Description Article"] = col
+                elif cl == "classe":                                       cmap["Classe"] = col
+                elif "consommation" in cl and "mois" in cl:               cmap["Conso mois"] = col
+                elif "coût de revient" in cl or "cout de revient" in cl:  cmap["Coût revient"] = col
+                elif "consommation" in cl and "an" in cl:                 cmap["Conso an"] = col
+                elif ("stock" in cl and ("sécu" in cl or "sécurité" in cl)):cmap["SS existant"] = col
+                elif "cout total" in cl or "coût total" in cl:            cmap["Coût total an"] = col
+                elif "fournisseur" in cl:                                  cmap["Fournisseur"] = col
+                elif "délai" in cl and "livraison" in cl:                  cmap["Délai livraison (mois)"] = col
+                elif "taille" in cl and "lot" in cl:                       cmap["MOQ"] = col
+                elif cl == "moq":                                           cmap["MOQ"] = col
 
-        SS_basic = Z * ss_sigma * math.sqrt(ss_lt) if ss_lt > 0 else 0
-        SS_full  = Z * math.sqrt(ss_lt * ss_sigma**2 + ss_demand**2 * ss_slt**2) if ss_lt > 0 else 0
-        stockMax = ss_demand * ss_lt + SS_full
-        costSS   = SS_full * ss_cost
-        cover    = SS_full / ss_demand if ss_demand > 0 else 0
+            df_source = df_raw.rename(columns={v:k for k,v in cmap.items()})
+            keep = [k for k in ["Code article","Description Article","Classe","Fournisseur",
+                                 "Délai livraison (mois)","MOQ","Conso mois","Coût revient",
+                                 "Conso an","SS existant","Coût total an"] if k in df_source.columns]
+            df_source = df_source[keep].copy()
+            for c in ["Conso mois","Coût revient","Conso an","SS existant","Coût total an","Délai livraison (mois)","MOQ"]:
+                if c in df_source.columns:
+                    df_source[c] = pd.to_numeric(df_source[c], errors="coerce").fillna(0)
+            if "Code article" in df_source.columns:
+                df_source = df_source[df_source["Code article"].notna()]
+                df_source = df_source[df_source["Code article"].astype(str).str.strip() != ""]
+            st.success(f"✅ {len(df_source)} articles chargés depuis « {sel} »")
+        except Exception as e:
+            st.error(f"Erreur de lecture : {e}")
 
-        st.markdown("---")
-        st.markdown("#### 📊 Résultats")
-        cols = st.columns(3)
-        results = [
-            ("Stock de sécurité (σD seul)", fmtInt(SS_basic), "unités", f"= {Z} × {ss_sigma} × √{ss_lt}", "#3b82f6"),
-            ("Stock de sécurité (formule complète)", fmtInt(SS_full), "unités", "avec variabilité du délai", "#22c55e"),
-            ("Stock maximum théorique", fmtInt(stockMax), "unités", f"D×LT + SS = {fmtInt(ss_demand*ss_lt)} + {fmtInt(SS_full)}", "#8892a4"),
-            ("Couverture du SS", fmt(cover, 1), "jours de conso.", "SS ÷ demande/jour", "#8892a4"),
-            ("Coût immobilisé (SS)", fmtInt(costSS), "TND", f"{fmtInt(SS_full)} × {ss_cost} TND/u", "#f59e0b"),
-            ("Niveau de service", ss_z_opt.split(" ")[0], f"Z = {Z}", "", "#a78bfa"),
-        ]
-        for i, (label, val, unit, delta, color) in enumerate(results):
-            with cols[i % 3]:
-                st.markdown(metric_card(label, val, unit, delta, color), unsafe_allow_html=True)
-                st.markdown("<div style='margin-bottom:10px;'></div>", unsafe_allow_html=True)
+    if use_demo and df_source is None:
+        df_source = pd.DataFrame({
+            "Code article":    [40007,40010,40011,40014,40015,40036,40042,40055,40062,40063],
+            "Description Article":["NYSOSEL (NICKEL CATALYSEUR)","TERRE TONSIL","PAPIER FILTRE",
+                                   "TOILE FILTRANTE TERRE","PERLITE FILTRATION PAF1","SEL MARIN FIN",
+                                   "MYVEROL 18-04 MYVEROL","TRISYL","VITAMINE A","VITAMINE E"],
+            "Classe":          ["MP"]*10,
+            "Conso mois":      [324,5886,509,32460,959,3747,3147,4432,16,22],
+            "Coût revient":    [59.23,1.709,3.823,49.787,1.700,0,0,8.189,0,0],
+            "Conso an":        [3888,70632,6108,389520,11508,44964,37764,53184,192,264],
+            "SS existant":     [2673,6353,2859,68,1171,1560,20000,5000,74,100],
+            "Coût total an":   [230286,120710,23351,19393032,19564,0,0,435524,0,0],
+        })
+        st.info("📊 Données de démo chargées — basées sur votre fichier Excel d'origine")
 
-        # Graphique : SS en fonction du niveau de service
-        st.markdown("---")
-        st.markdown("#### 📈 Sensibilité : SS selon le niveau de service")
-        z_vals = [1.04, 1.28, 1.65, 1.96, 2.33, 2.58]
-        ns_vals = [85, 90, 95, 97.5, 99, 99.5]
-        ss_vals = [round(z * math.sqrt(ss_lt * ss_sigma**2 + ss_demand**2 * ss_slt**2)) for z in z_vals]
-        fig = go.Figure(go.Bar(
-            x=[f"{n}%" for n in ns_vals], y=ss_vals,
-            marker_color=["#3b82f6" if n != float(ss_z_opt.split("%")[0]) else "#22c55e" for n in ns_vals],
-            text=ss_vals, textposition='outside',
-        ))
-        fig.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='#8892a4', family='Syne'),
-            xaxis=dict(title="Niveau de service", gridcolor='rgba(255,255,255,0.05)'),
-            yaxis=dict(title="Stock de sécurité (unités)", gridcolor='rgba(255,255,255,0.05)'),
-            height=280, margin=dict(t=20, b=10, l=0, r=0),
-        )
-        st.plotly_chart(fig, use_container_width=True)
+    if df_source is not None and len(df_source) > 0:
+        with st.expander("👁 Aperçu des données sources", expanded=False):
+            st.dataframe(df_source, use_container_width=True, hide_index=True)
 
-    # ── EOQ ──────────────────────────────────────────────────────────────────
-    with tab_eoq:
-        st.markdown(formula_box(
-            "Modèle de Wilson",
-            "EOQ = √(2 × D × Sc / (Sh × Cu))",
-            "D = demande annuelle · Sc = coût passation · Sh = taux stockage · Cu = coût unitaire"
-        ), unsafe_allow_html=True)
+        # ── Calculs ──
+        results = []
+        for _, row in df_source.iterrows():
+            cm  = float(row.get("Conso mois",0) or 0)
+            ca  = float(row.get("Conso an",0) or cm*12) or cm*12
+            cu  = float(row.get("Coût revient",0) or 0)
+            lt  = float(row.get("Délai livraison (mois)",p_lt) or p_lt)
+            moq = float(row.get("MOQ",0) or 0)
 
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            eoq_D    = st.number_input("Demande annuelle (unités)", value=12000, min_value=1, step=100)
-            eoq_Sc   = st.number_input("Coût passation commande (TND)", value=150.0, min_value=0.0, step=5.0)
-        with col2:
-            eoq_Cu   = st.number_input("Coût unitaire d'achat (TND)", value=80.0, min_value=0.01, step=1.0)
-            eoq_Sh   = st.number_input("Taux de stockage annuel (%)", value=20.0, min_value=0.1, max_value=100.0, step=1.0)
-        with col3:
-            eoq_LT   = st.number_input("Délai fournisseur (jours)", value=10, min_value=1, step=1)
-            eoq_days = st.number_input("Jours ouvrables/an", value=250, min_value=1, step=1)
+            ss  = calc_ss(cm, z=Z, lt_mois=lt, variab=p_var/100)
+            eoq, nb_cmd, _ = calc_eoq(ca, cu, sc_cost=p_sc, taux=p_taux/100)
+            pr  = calc_pr(cm, lt, ss)
+            css = round(ss * cu, 2) if cu > 0 else 0
+            diff = round(eoq - moq) if moq > 0 else ""
 
-        h      = (eoq_Sh / 100) * eoq_Cu
-        EOQ    = math.sqrt(2 * eoq_D * eoq_Sc / h) if h > 0 else 0
-        nbCmd  = eoq_D / EOQ if EOQ > 0 else 0
-        T      = eoq_days / nbCmd if nbCmd > 0 else 0
-        Cpass  = nbCmd * eoq_Sc
-        Cstock = (EOQ / 2) * h
-        Ctotal = Cpass + Cstock
-        RP_eoq = (eoq_D / eoq_days) * eoq_LT
+            results.append({
+                "Code article":         row.get("Code article",""),
+                "Description Article":  row.get("Description Article",""),
+                "Classe":               row.get("Classe",""),
+                "Fournisseur":          row.get("Fournisseur",""),
+                "Délai livraison (mois)": lt,
+                "Incertitude":          p_var/100,
+                "EOQ":                  eoq,
+                "MOQ":                  int(moq) if moq>0 else "",
+                "Diff MOQ EOQ":         diff,
+                "Stock sécurité":       ss,
+                "SS existant":          float(row.get("SS existant",0) or 0),
+                "Coût SS":              css,
+                "Point de commande":    pr,
+                "Conso mois":           cm,
+                "Coût revient":         cu,
+                "Conso an":             ca,
+                "Coût total an":        float(row.get("Coût total an",0) or 0),
+            })
 
-        st.markdown("---")
-        st.markdown("#### 📊 Résultats EOQ")
-        cols = st.columns(3)
-        results = [
-            ("Quantité économique (EOQ)", fmtInt(EOQ), "unités / commande", None, "#3b82f6"),
-            ("Nombre de commandes/an", fmt(nbCmd, 1), "commandes", None, "#8892a4"),
-            ("Périodicité de commande", fmtInt(T), "jours ouvrables", None, "#8892a4"),
-            ("Coût passation annuel", fmtInt(Cpass), "TND", None, "#f59e0b"),
-            ("Coût stockage annuel", fmtInt(Cstock), "TND", None, "#f59e0b"),
-            ("Coût total minimum", fmtInt(Ctotal), "TND/an", "Point optimal de Wilson", "#22c55e"),
-        ]
-        for i, (label, val, unit, delta, color) in enumerate(results):
-            with cols[i % 3]:
-                st.markdown(metric_card(label, val, unit, delta, color), unsafe_allow_html=True)
-                st.markdown("<div style='margin-bottom:10px;'></div>", unsafe_allow_html=True)
+        df_res = pd.DataFrame(results)
 
-        st.markdown("---")
-        st.markdown("#### 📈 Courbe des coûts — Modèle de Wilson")
-        qty_range = np.linspace(max(10, EOQ * 0.2), EOQ * 2.5, 200)
-        c_pass_arr = [(eoq_D / q) * eoq_Sc for q in qty_range]
-        c_stock_arr = [(q / 2) * h for q in qty_range]
-        c_total_arr = [cp + cs for cp, cs in zip(c_pass_arr, c_stock_arr)]
+        st.divider()
+        st.markdown("#### 🧮 Tableau des calculs")
 
-        fig2 = go.Figure()
-        fig2.add_trace(go.Scatter(x=qty_range, y=c_pass_arr, name="Coût passation", line=dict(color="#60a5fa", width=2)))
-        fig2.add_trace(go.Scatter(x=qty_range, y=c_stock_arr, name="Coût stockage", line=dict(color="#f59e0b", width=2)))
-        fig2.add_trace(go.Scatter(x=qty_range, y=c_total_arr, name="Coût total", line=dict(color="#22c55e", width=2.5)))
-        fig2.add_vline(x=EOQ, line_dash="dash", line_color="#ef4444", annotation_text=f"EOQ = {fmtInt(EOQ)} u", annotation_font_color="#ef4444")
-        fig2.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='#8892a4', family='Syne'),
-            xaxis=dict(title="Quantité commandée (u)", gridcolor='rgba(255,255,255,0.05)'),
-            yaxis=dict(title="Coût annuel (TND)", gridcolor='rgba(255,255,255,0.05)'),
-            legend=dict(bgcolor='rgba(0,0,0,0)', bordercolor='rgba(255,255,255,0.1)', borderwidth=1),
-            height=320, margin=dict(t=20, b=10, l=0, r=0),
-        )
-        st.plotly_chart(fig2, use_container_width=True)
+        disp = df_res[["Code article","Description Article","Classe",
+                        "EOQ","MOQ","Diff MOQ EOQ","Stock sécurité","Coût SS","Point de commande"]].copy()
+        st.dataframe(disp, use_container_width=True, hide_index=True,
+            column_config={
+                "EOQ":              st.column_config.NumberColumn("EOQ (u)", format="%d"),
+                "MOQ":              st.column_config.NumberColumn("MOQ (u)"),
+                "Diff MOQ EOQ":     st.column_config.NumberColumn("Diff MOQ/EOQ"),
+                "Stock sécurité":   st.column_config.NumberColumn("Stock sécu. (u)", format="%d"),
+                "Coût SS":          st.column_config.NumberColumn("Coût SS (TND)", format="%.2f"),
+                "Point de commande":st.column_config.NumberColumn("Point commande (u)", format="%d"),
+            })
 
-    # ── KPIs STOCK ───────────────────────────────────────────────────────────
-    with tab_kpi:
-        col1, col2 = st.columns(2)
-        with col1:
-            kpi_avgstock = st.number_input("Stock moyen (unités)", value=3000, min_value=0, step=100)
-            kpi_sales    = st.number_input("Ventes annuelles (unités)", value=18000, min_value=1, step=100)
-            kpi_val      = st.number_input("Valeur du stock (TND)", value=240000, min_value=0, step=1000)
-            kpi_ca       = st.number_input("CA annuel (TND)", value=2400000, min_value=1, step=10000)
-        with col2:
-            kpi_ontime   = st.number_input("Commandes livrées à temps", value=465, min_value=0, step=1)
-            kpi_total    = st.number_input("Total commandes livrées", value=490, min_value=1, step=1)
-            kpi_logcost  = st.number_input("Coût logistique total (TND)", value=168000, min_value=0, step=1000)
-            kpi_shrate   = st.number_input("Taux de stockage (%)", value=22.0, min_value=0.1, max_value=100.0, step=1.0)
-
-        rotation    = kpi_sales / kpi_avgstock if kpi_avgstock > 0 else 0
-        cover       = (kpi_avgstock / kpi_sales) * 365 if kpi_sales > 0 else 0
-        service     = (kpi_ontime / kpi_total) * 100 if kpi_total > 0 else 0
-        cost_rate   = (kpi_logcost / kpi_ca) * 100 if kpi_ca > 0 else 0
-        stock_cost  = kpi_val * (kpi_shrate / 100)
-        dsi         = kpi_avgstock / (kpi_sales / 365) if kpi_sales > 0 else 0
-
-        def kpi_color(val, good, ok):
-            return "#22c55e" if val >= good else "#f59e0b" if val >= ok else "#ef4444"
-
-        st.markdown("---")
-        st.markdown("#### 📊 Résultats KPIs")
-        cols = st.columns(3)
-        kpis = [
-            ("Taux de rotation", fmt(rotation, 1) + "×", "fois/an · >6× = excellent", kpi_color(rotation, 6, 4)),
-            ("Couverture stocks", fmtInt(cover) + "j", "jours · 15–30j = optimal", kpi_color(60 - abs(cover - 22.5), 30, 10)),
-            ("Taux de service OTD", fmt(service, 1) + "%", "livraisons à temps · >95% cible", kpi_color(service, 95, 85)),
-            ("Coût logistique / CA", fmt(cost_rate, 1) + "%", "objectif < 8%", kpi_color(8 - cost_rate + 8, 8, 4)),
-            ("Coût de stockage/an", fmtInt(stock_cost), "TND", "#f59e0b"),
-            ("Jours de stock (DSI)", fmt(dsi, 0), "jours équivalents", "#8892a4"),
-        ]
-        for i, (label, val, unit, color) in enumerate(kpis):
-            with cols[i % 3]:
-                st.markdown(metric_card(label, val, unit, color=color), unsafe_allow_html=True)
-                st.markdown("<div style='margin-bottom:10px;'></div>", unsafe_allow_html=True)
-
-        # Radar chart
-        st.markdown("---")
-        st.markdown("#### 🕸️ Radar de performance")
-        rot_score    = min(100, rotation / 10 * 100)
-        serv_score   = service
-        cost_score   = max(0, 100 - cost_rate * 5)
-        cover_score  = max(0, 100 - abs(cover - 22.5) * 2)
-        dsi_score    = max(0, 100 - abs(dsi - 22.5) * 2)
-
-        categories = ["Rotation stocks", "Taux de service", "Coût logistique", "Couverture optimale", "DSI optimal"]
-        values = [rot_score, serv_score, cost_score, cover_score, dsi_score]
-        values += [values[0]]
-        categories += [categories[0]]
-
-        fig3 = go.Figure(go.Scatterpolar(
-            r=values, theta=categories, fill='toself',
-            fillcolor='rgba(59,130,246,0.15)', line=dict(color='#3b82f6', width=2),
-        ))
-        fig3.update_layout(
-            polar=dict(
-                radialaxis=dict(visible=True, range=[0, 100], gridcolor='rgba(255,255,255,0.1)', color='#5a6478'),
-                angularaxis=dict(gridcolor='rgba(255,255,255,0.1)', color='#8892a4'),
-                bgcolor='rgba(0,0,0,0)',
-            ),
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='#8892a4', family='Syne'),
-            height=350, margin=dict(t=20, b=20, l=40, r=40),
-            showlegend=False,
-        )
-        st.plotly_chart(fig3, use_container_width=True)
-
-    # ── POINT DE RÉAPPRO ─────────────────────────────────────────────────────
-    with tab_rp:
-        st.markdown(formula_box(
-            "Formule",
-            "PR = (Dmoy × LT) + SS",
-            "Dmoy = demande moyenne journalière · LT = délai fournisseur · SS = stock de sécurité"
-        ), unsafe_allow_html=True)
-
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            rp_demand  = st.number_input("Demande moyenne (u/jour)", value=50.0, min_value=0.0, step=1.0, key="rp_d")
-            rp_lt      = st.number_input("Délai fournisseur (jours)", value=7.0, min_value=0.0, step=1.0, key="rp_lt")
-        with col2:
-            rp_ss      = st.number_input("Stock de sécurité (unités)", value=132.0, min_value=0.0, step=10.0, key="rp_ss")
-            rp_dmax    = st.number_input("Demande max (u/jour)", value=70.0, min_value=0.0, step=1.0, key="rp_dm")
-        with col3:
-            rp_ltmax   = st.number_input("Délai fournisseur max (jours)", value=10.0, min_value=0.0, step=1.0, key="rp_ltm")
-            rp_current = st.number_input("Stock actuel (unités)", value=500.0, min_value=0.0, step=10.0, key="rp_cur")
-
-        PR       = rp_demand * rp_lt + rp_ss
-        PR_max   = rp_dmax * rp_ltmax
-        days_left = (rp_current - rp_ss) / rp_demand if rp_demand > 0 else 0
-        days_crit = days_left - rp_lt
-
-        st.markdown("---")
-        st.markdown("#### 📊 Résultats")
-
-        # Statut
-        if rp_current <= rp_ss:
-            st.markdown("<div class='alert-critical'>🔴 <strong>RUPTURE IMMINENTE</strong> — Stock sous le stock de sécurité ! Commander immédiatement.</div>", unsafe_allow_html=True)
-        elif rp_current <= PR:
-            st.markdown("<div class='alert-warning'>🟡 <strong>COMMANDER MAINTENANT</strong> — Le point de réapprovisionnement est atteint.</div>", unsafe_allow_html=True)
-        else:
-            st.markdown(f"<div class='alert-ok'>🟢 <strong>Stock suffisant</strong> — Stock actuel ({fmtInt(rp_current)} u) au-dessus du PR ({fmtInt(PR)} u).</div>", unsafe_allow_html=True)
-
-        cols = st.columns(3)
-        rp_results = [
-            ("Point de réappro. (PR)", fmtInt(PR), "unités", "#3b82f6"),
-            ("Stock max théorique", fmtInt(PR_max), "unités", "#8892a4"),
-            ("Stock actuel", fmtInt(rp_current), "unités", "#22c55e" if rp_current > PR else "#ef4444"),
-            ("Jours de stock restants", fmt(days_left, 1), "jours (hors SS)", "#8892a4"),
-            ("Délai critique restant", fmt(days_crit, 1), "jours avant urgence", "#f59e0b" if days_crit > 0 else "#ef4444"),
-            ("Stock de sécurité", fmtInt(rp_ss), "unités", "#a78bfa"),
-        ]
-        for i, (label, val, unit, color) in enumerate(rp_results):
-            with cols[i % 3]:
-                st.markdown(metric_card(label, val, unit, color=color), unsafe_allow_html=True)
-                st.markdown("<div style='margin-bottom:10px;'></div>", unsafe_allow_html=True)
-
-        # Jauge stock
-        st.markdown("---")
-        st.markdown("#### 📉 Niveau de stock actuel")
-        max_display = max(PR_max * 1.2, rp_current * 1.2)
-        fig4 = go.Figure(go.Indicator(
-            mode="gauge+number+delta",
-            value=rp_current,
-            delta={'reference': PR, 'valueformat': ',.0f'},
-            number={'valueformat': ',.0f', 'font': {'color': '#e8eaf0', 'family': 'DM Mono'}},
-            gauge={
-                'axis': {'range': [0, max_display], 'tickcolor': '#5a6478', 'tickfont': {'color': '#5a6478'}},
-                'bar': {'color': '#3b82f6', 'thickness': 0.25},
-                'bgcolor': '#1e2535',
-                'steps': [
-                    {'range': [0, rp_ss], 'color': 'rgba(239,68,68,0.25)'},
-                    {'range': [rp_ss, PR], 'color': 'rgba(245,158,11,0.2)'},
-                    {'range': [PR, max_display], 'color': 'rgba(34,197,94,0.15)'},
-                ],
-                'threshold': {'line': {'color': '#ef4444', 'width': 3}, 'thickness': 0.8, 'value': PR},
-            }
-        ))
-        fig4.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)', font=dict(color='#8892a4', family='Syne'),
-            height=260, margin=dict(t=10, b=10, l=30, r=30),
-        )
-        st.plotly_chart(fig4, use_container_width=True)
-        st.caption(f"🔴 Rouge : sous stock sécu. ({fmtInt(rp_ss)} u)  |  🟡 Ambre : entre SS et PR ({fmtInt(PR)} u)  |  🟢 Vert : stock normal")
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# PAGE : PROCESSUS FOURNISSEURS
-# ═══════════════════════════════════════════════════════════════════════════════
-elif page == "🏭 Processus fournisseurs":
-    st.markdown("## 🏭 Évaluation des processus fournisseurs")
-    st.markdown("<p style='color:#8892a4;'>Analysez la performance du processus de passation des commandes</p>", unsafe_allow_html=True)
-
-    with st.expander("📋 Données du fournisseur", expanded=True):
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            pf_name = st.text_input("Nom du fournisseur", value="Würth Tunisie SA")
-        with col2:
-            pf_ref  = st.text_input("Référence article", value="RB-7204")
-        with col3:
-            pf_cat  = st.selectbox("Catégorie", ["Composants mécaniques", "Matières premières", "Fournitures industrielles", "Sous-traitance"])
-
-    st.markdown("#### Métriques de performance · 6 derniers mois")
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        pf_total    = st.number_input("Commandes passées", value=24, min_value=1)
-        pf_ontime   = st.number_input("Livrées à temps", value=20, min_value=0)
-    with col2:
-        pf_complete = st.number_input("Livrées complètes", value=22, min_value=0)
-        pf_nc       = st.number_input("Non-conformités", value=2, min_value=0)
-    with col3:
-        pf_lt_a     = st.number_input("Délai annoncé (jours)", value=7.0, min_value=0.0, step=0.5)
-        pf_lt_r     = st.number_input("Délai réel moyen (jours)", value=8.4, min_value=0.0, step=0.1)
-    with col4:
-        pf_proc     = st.number_input("Traitement commande (h)", value=18.0, min_value=0.0, step=1.0)
-        pf_ack      = st.number_input("Réponse accusé réception (h)", value=4.0, min_value=0.0, step=0.5)
-
-    # Calculs
-    otd       = (pf_ontime / pf_total) * 100
-    fill_rate = (pf_complete / pf_total) * 100
-    quality   = ((pf_total - pf_nc) / pf_total) * 100
-    lt_perf   = max(0, 100 - ((pf_lt_r - pf_lt_a) / pf_lt_a) * 100) if pf_lt_a > 0 else 0
-    proc_s    = 100 if pf_proc <= 8 else 85 if pf_proc <= 24 else 60 if pf_proc <= 48 else 30
-    ack_s     = 100 if pf_ack <= 2 else 85 if pf_ack <= 8 else 60 if pf_ack <= 24 else 30
-
-    global_score = otd*0.30 + fill_rate*0.20 + quality*0.20 + lt_perf*0.15 + proc_s*0.10 + ack_s*0.05
-    color  = score_color(global_score)
-    label  = score_label(global_score)
-
-    advice = {
-        "Excellent": "Fournisseur stratégique. Maintenir le partenariat et envisager des accords-cadres.",
-        "Bon": "Performance satisfaisante. Des améliorations mineures sur le délai réel peuvent optimiser la chaîne.",
-        "Moyen": "Performance insuffisante. Plan d'amélioration fournisseur recommandé sous 30 jours.",
-        "Insuffisant": "Performance critique. Envisager une diversification fournisseur ou un audit qualité immédiat.",
-    }[label]
-
-    st.markdown("---")
-    st.markdown("#### 🎯 Score global")
-
-    col_gauge, col_detail = st.columns([1, 2])
-    with col_gauge:
-        fig_gauge = go.Figure(go.Indicator(
-            mode="gauge+number",
-            value=round(global_score, 1),
-            number={'suffix': '/100', 'font': {'color': color, 'family': 'DM Mono', 'size': 28}},
-            gauge={
-                'axis': {'range': [0, 100], 'tickcolor': '#5a6478', 'tickfont': {'color': '#5a6478'}},
-                'bar': {'color': color, 'thickness': 0.25},
-                'bgcolor': '#1e2535',
-                'steps': [
-                    {'range': [0, 55], 'color': 'rgba(239,68,68,0.2)'},
-                    {'range': [55, 70], 'color': 'rgba(245,158,11,0.2)'},
-                    {'range': [70, 85], 'color': 'rgba(20,184,166,0.2)'},
-                    {'range': [85, 100], 'color': 'rgba(34,197,94,0.2)'},
-                ],
-            }
-        ))
-        fig_gauge.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)', font=dict(color='#8892a4', family='Syne'),
-            height=220, margin=dict(t=10, b=10, l=20, r=20),
-        )
-        st.plotly_chart(fig_gauge, use_container_width=True)
-
-    with col_detail:
-        st.markdown(f"""
-        <div style='background:#1e2535; border-left:4px solid {color}; border-radius:10px; padding:1.2rem 1.4rem; margin-top:1rem;'>
-            <div style='font-size:1.3rem; font-weight:600; color:{color}; margin-bottom:8px;'>{label} — {pf_name}</div>
-            <div style='font-size:0.85rem; color:#8892a4; line-height:1.6;'>{advice}</div>
-            <div style='margin-top:10px; font-size:0.75rem; color:#5a6478;'>
-                Évaluation basée sur {pf_total} commandes · Article {pf_ref} · {pf_cat}
-            </div>
-        </div>""", unsafe_allow_html=True)
-
-    st.markdown("---")
-    st.markdown("#### 📋 Critères détaillés")
-
-    criteria = [
-        ("Livraison à temps (OTD)", otd, f"{pf_ontime}/{pf_total} commandes · Poids 30%"),
-        ("Taux de service (fill rate)", fill_rate, f"{pf_complete}/{pf_total} complètes · Poids 20%"),
-        ("Qualité / conformité", quality, f"{pf_total - pf_nc}/{pf_total} sans NC · Poids 20%"),
-        ("Fiabilité délai annoncé", lt_perf, f"Annoncé: {pf_lt_a}j · Réel: {pf_lt_r}j · Poids 15%"),
-        ("Délai traitement commande", proc_s, f"{pf_proc}h de traitement · Poids 10%"),
-        ("Réactivité accusé réception", ack_s, f"{pf_ack}h pour ACK · Poids 5%"),
-    ]
-
-    col1, col2 = st.columns(2)
-    for i, (name, score, note) in enumerate(criteria):
-        c = score_color(score)
-        with (col1 if i % 2 == 0 else col2):
-            st.markdown(f"""
-            <div style='background:#1e2535; border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:1rem; margin-bottom:10px;'>
-                <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;'>
-                    <span style='font-size:0.85rem; font-weight:600; color:#e8eaf0;'>{name}</span>
-                    <span style='font-family:"DM Mono",monospace; font-size:0.9rem; color:{c};'>{score:.1f}%</span>
-                </div>
-                <div style='background:#0f1117; border-radius:4px; height:6px; overflow:hidden;'>
-                    <div style='background:{c}; height:100%; width:{score}%; border-radius:4px;'></div>
-                </div>
-                <div style='font-size:0.7rem; color:#5a6478; margin-top:6px;'>{note}</div>
-            </div>""", unsafe_allow_html=True)
-
-    # Recommandations
-    st.markdown("---")
-    st.markdown("#### 💡 Recommandations")
-    if otd < 85:
-        st.markdown(f"<div class='alert-warning'>⏱ <strong>OTD insuffisant ({otd:.1f}%)</strong> — Négocier des pénalités de retard. Demander un plan de fiabilisation sur 90 jours. Majorer le stock de sécurité pour cet article.</div>", unsafe_allow_html=True)
-    if quality < 95:
-        st.markdown(f"<div class='alert-warning'>⚠️ <strong>Non-conformités détectées ({pf_nc} NC)</strong> — Déclencher un audit qualité fournisseur. Renforcer les contrôles à réception.</div>", unsafe_allow_html=True)
-    if pf_lt_r > pf_lt_a:
-        st.markdown(f"<div class='alert-warning'>📅 <strong>Dérive du délai réel (+{pf_lt_r - pf_lt_a:.1f} jours)</strong> — Recalculer le point de réappro. avec le délai réel. Demander une révision contractuelle.</div>", unsafe_allow_html=True)
-    if pf_proc > 24:
-        st.markdown(f"<div class='alert-info'>⚙️ <strong>Délai de traitement élevé ({pf_proc:.0f}h)</strong> — Proposer une commande électronique (EDI). Objectif : &lt; 8h.</div>", unsafe_allow_html=True)
-    if global_score >= 85:
-        st.markdown("<div class='alert-ok'>✅ <strong>Performance globale excellente</strong> — Envisager un accord-cadre annuel avec conditions préférentielles.</div>", unsafe_allow_html=True)
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# PAGE : ALERTES STOCK
-# ═══════════════════════════════════════════════════════════════════════════════
-elif page == "🔔 Alertes stock":
-    st.markdown("## 🔔 Alertes & Surveillance des stocks")
-    st.markdown("<p style='color:#8892a4;'>Paramétrez vos articles et recevez des alertes automatiques sur vos niveaux de stock</p>", unsafe_allow_html=True)
-
-    # Données de démo
-    demo_data = {
-        "Référence":        ["RB-7204", "IS-316L", "VD-0822", "CA-1140", "JT-2200", "MO-1115"],
-        "Désignation":      ["Roulements à billes SKF", "Acier inox 316L (kg)", "Vannes pneumatiques", "Câble 4×2.5mm² (m)", "Joints toriques EPDM", "Moteur électrique 0.75kW"],
-        "Stock actuel":     [45, 820, 380, 2400, 1250, 12],
-        "Stock sécurité":   [132, 600, 80, 300, 400, 8],
-        "Point réappro.":   [482, 1850, 230, 900, 1200, 35],
-        "Conso. moy./j":    [50, 120, 15, 80, 95, 3],
-        "Lead time (j)":    [7, 10, 12, 8, 5, 21],
-    }
-
-    col_btn1, col_btn2, _ = st.columns([1, 1, 3])
-    with col_btn1:
-        load_demo = st.button("📂 Charger données de démo", type="secondary")
-    with col_btn2:
-        st.markdown("")
-
-    if "articles_df" not in st.session_state or load_demo:
-        st.session_state.articles_df = pd.DataFrame(demo_data)
-
-    st.markdown("#### ✏️ Tableau de bord des articles")
-    st.caption("Modifiez directement les valeurs dans le tableau")
-
-    edited_df = st.data_editor(
-        st.session_state.articles_df,
-        use_container_width=True,
-        num_rows="dynamic",
-        column_config={
-            "Référence":      st.column_config.TextColumn("Référence", width="small"),
-            "Désignation":    st.column_config.TextColumn("Désignation", width="medium"),
-            "Stock actuel":   st.column_config.NumberColumn("Stock actuel", min_value=0, format="%d"),
-            "Stock sécurité": st.column_config.NumberColumn("Stock sécu.", min_value=0, format="%d"),
-            "Point réappro.": st.column_config.NumberColumn("Point réappro.", min_value=0, format="%d"),
-            "Conso. moy./j":  st.column_config.NumberColumn("Conso./jour", min_value=0, format="%d"),
-            "Lead time (j)":  st.column_config.NumberColumn("Lead time", min_value=0, format="%d"),
-        },
-        hide_index=True,
-        key="articles_editor"
-    )
-
-    if st.button("🔍 Analyser les stocks", type="primary"):
-        st.session_state.articles_df = edited_df
-        df = edited_df.copy()
-
-        # Calculs
-        df["Jours restants"] = np.where(
-            df["Conso. moy./j"] > 0,
-            ((df["Stock actuel"] - df["Stock sécurité"]) / df["Conso. moy./j"]).round(1),
-            np.nan
-        )
-
-        def get_status(row):
-            if row["Stock actuel"] <= row["Stock sécurité"]: return "🔴 Rupture imminente"
-            if row["Stock actuel"] <= row["Point réappro."]: return "🟡 Commander"
-            return "🟢 Normal"
-
-        def get_pct(row):
-            return min(100, round(row["Stock actuel"] / row["Point réappro."] * 100)) if row["Point réappro."] > 0 else 0
-
-        df["Statut"] = df.apply(get_status, axis=1)
-        df["Couverture %"] = df.apply(get_pct, axis=1)
-
-        critiques = df[df["Statut"] == "🔴 Rupture imminente"]
-        attention = df[df["Statut"] == "🟡 Commander"]
-        ok_stock  = df[df["Statut"] == "🟢 Normal"]
-
+        # ── KPIs ──
         st.markdown("---")
         st.markdown("#### 📊 Synthèse")
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            st.markdown(metric_card("🔴 Rupture imminente", str(len(critiques)), "article(s) sous le stock de sécurité", color="#ef4444"), unsafe_allow_html=True)
-        with c2:
-            st.markdown(metric_card("🟡 Commander maintenant", str(len(attention)), "article(s) entre SS et point réappro.", color="#f59e0b"), unsafe_allow_html=True)
-        with c3:
-            st.markdown(metric_card("🟢 Stock normal", str(len(ok_stock)), "article(s) au-dessus du point de réappro.", color="#22c55e"), unsafe_allow_html=True)
+        c1,c2,c3,c4 = st.columns(4)
+        with c1: st.markdown(mcard("Articles traités", str(len(df_res)), "articles"), unsafe_allow_html=True)
+        with c2: st.markdown(mcard("Coût total SS", f"{df_res['Coût SS'].sum():,.0f}", "TND immobilisés", color="#f59e0b"), unsafe_allow_html=True)
+        eoq_mean = df_res[df_res["EOQ"]>0]["EOQ"].mean()
+        with c3: st.markdown(mcard("EOQ moyen", fmtInt(eoq_mean), "u / commande", color="#22c55e"), unsafe_allow_html=True)
+        ecarts_hauts = (df_res["Stock sécurité"] > df_res["SS existant"] * 1.3).sum()
+        with c4: st.markdown(mcard("SS à réviser", str(ecarts_hauts), "SS calculé > 130% SS existant", color="#ef4444"), unsafe_allow_html=True)
 
-        # Graphique
+        # ── Graphique EOQ vs SS ──
         st.markdown("---")
-        st.markdown("#### 📈 Niveaux de stock vs seuils")
-        fig_stock = go.Figure()
-        fig_stock.add_trace(go.Bar(
-            name="Stock actuel", x=df["Référence"], y=df["Stock actuel"],
-            marker_color=[
-                "#ef4444" if s == "🔴 Rupture imminente" else "#f59e0b" if s == "🟡 Commander" else "#22c55e"
-                for s in df["Statut"]
-            ],
-            text=df["Stock actuel"], textposition='outside',
-        ))
-        fig_stock.add_trace(go.Scatter(
-            name="Stock de sécurité", x=df["Référence"], y=df["Stock sécurité"],
-            mode='markers+lines', marker=dict(color='#a78bfa', size=8, symbol='diamond'),
-            line=dict(color='#a78bfa', width=1.5, dash='dash'),
-        ))
-        fig_stock.add_trace(go.Scatter(
-            name="Point de réappro.", x=df["Référence"], y=df["Point réappro."],
-            mode='markers+lines', marker=dict(color='#f59e0b', size=8, symbol='triangle-up'),
-            line=dict(color='#f59e0b', width=1.5, dash='dot'),
-        ))
-        fig_stock.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='#8892a4', family='Syne'),
-            xaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
-            yaxis=dict(title="Unités", gridcolor='rgba(255,255,255,0.05)'),
-            legend=dict(bgcolor='rgba(0,0,0,0)', bordercolor='rgba(255,255,255,0.1)', borderwidth=1),
-            height=350, margin=dict(t=20, b=10, l=0, r=0),
-            barmode='group',
-        )
-        st.plotly_chart(fig_stock, use_container_width=True)
+        st.markdown("#### 📈 EOQ · Stock de sécurité · Point de commande")
+        labels = df_res["Code article"].astype(str).tolist()
+        fig = go.Figure()
+        fig.add_trace(go.Bar(name="EOQ", x=labels, y=df_res["EOQ"], marker_color="#3b82f6",
+                             text=df_res["EOQ"].apply(lambda v: f"{int(v):,}" if v>0 else ""), textposition="outside"))
+        fig.add_trace(go.Bar(name="Stock sécurité", x=labels, y=df_res["Stock sécurité"], marker_color="#f59e0b",
+                             text=df_res["Stock sécurité"].apply(lambda v: f"{int(v):,}"), textposition="outside"))
+        fig.add_trace(go.Scatter(name="Point de commande", x=labels, y=df_res["Point de commande"],
+                                 mode="markers+lines", marker=dict(color="#ef4444",size=9,symbol="diamond"),
+                                 line=dict(color="#ef4444",width=2,dash="dash")))
+        if "SS existant" in df_res.columns and df_res["SS existant"].sum() > 0:
+            fig.add_trace(go.Scatter(name="SS existant (fichier)", x=labels, y=df_res["SS existant"],
+                                     mode="markers+lines", marker=dict(color="#a78bfa",size=7,symbol="circle"),
+                                     line=dict(color="#a78bfa",width=1.5,dash="dot")))
+        fig.update_layout(**dark_layout(), barmode="group", height=400,
+                          xaxis=dict(title="Article", gridcolor="rgba(255,255,255,.05)"),
+                          yaxis=dict(title="Unités", gridcolor="rgba(255,255,255,.05)"))
+        st.plotly_chart(fig, use_container_width=True)
 
-        # Tableau résultat
-        st.markdown("---")
-        st.markdown("#### 📋 Détail par article")
-        display_df = df[["Référence", "Désignation", "Stock actuel", "Stock sécurité", "Point réappro.", "Jours restants", "Statut"]].copy()
-        st.dataframe(
-            display_df,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Jours restants": st.column_config.NumberColumn("Jours restants", format="%.1f j"),
-                "Stock actuel":   st.column_config.ProgressColumn("Stock actuel", min_value=0, max_value=int(df["Point réappro."].max() * 1.2), format="%d"),
-            }
-        )
-
-        # Actions recommandées
-        if len(critiques) > 0 or len(attention) > 0:
+        # ── Comparaison SS calculé vs existant ──
+        if df_res["SS existant"].sum() > 0:
             st.markdown("---")
-            st.markdown("#### 🚨 Actions recommandées")
-            for _, row in critiques.iterrows():
-                jours = f"{row['Jours restants']:.1f}" if not pd.isna(row["Jours restants"]) else "?"
-                st.markdown(f"""<div class='alert-critical'>
-                    🔴 <strong>{row['Référence']} — {row['Désignation']} : RUPTURE IMMINENTE</strong><br/>
-                    <span style='font-size:0.82rem;'>Stock actuel <strong>{int(row['Stock actuel'])} u</strong> sous le stock de sécurité ({int(row['Stock sécurité'])} u).
-                    Environ <strong>{jours} jours</strong> avant arrêt. Passer commande urgente. Lead time : {int(row['Lead time (j)'])} jours.</span>
-                </div>""", unsafe_allow_html=True)
+            st.markdown("#### 🔍 SS calculé vs SS dans votre fichier")
+            comp = df_res[["Code article","Description Article","SS existant","Stock sécurité"]].copy()
+            comp["Écart (u)"] = comp["Stock sécurité"] - comp["SS existant"]
+            comp["Écart %"] = np.where(comp["SS existant"]>0,
+                                       (comp["Écart (u)"] / comp["SS existant"] * 100).round(1), None)
+            st.dataframe(comp, use_container_width=True, hide_index=True,
+                column_config={
+                    "SS existant":     st.column_config.NumberColumn("SS fichier", format="%d"),
+                    "Stock sécurité":  st.column_config.NumberColumn("SS calculé", format="%d"),
+                    "Écart (u)":       st.column_config.NumberColumn("Écart (u)", format="%d"),
+                    "Écart %":         st.column_config.NumberColumn("Écart %", format="%.1f%%"),
+                })
 
-            for _, row in attention.iterrows():
-                st.markdown(f"""<div class='alert-warning'>
-                    🟡 <strong>{row['Référence']} — {row['Désignation']} : Commander maintenant</strong><br/>
-                    <span style='font-size:0.82rem;'>Stock actuel <strong>{int(row['Stock actuel'])} u</strong> a atteint le point de réappro. ({int(row['Point réappro.'])} u).
-                    Lancer une commande. Délai : {int(row['Lead time (j)'])} jours.</span>
-                </div>""", unsafe_allow_html=True)
+        # ── Export ──
+        st.markdown("---")
+        st.markdown("#### 💾 Export — tableau rempli")
+        st.info("Le fichier exporté reprend exactement le format de votre tableau d'origine avec toutes les colonnes calculées.")
+        excel_buf = build_excel(df_res)
+        st.download_button(
+            label="⬇️ Télécharger le tableau Excel rempli",
+            data=excel_buf,
+            file_name="supply_chain_calculs.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            type="primary",
+        )
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# PAGE CALCULATEURS
+# ════════════════════════════════════════════════════════════════════════════════
+elif page == "⚙️ Calculateurs":
+    st.markdown("## ⚙️ Calculateurs Supply Chain")
+    tab_ss,tab_eoq,tab_kpi,tab_rp = st.tabs(["📦 Stock de sécurité","📐 EOQ (Wilson)","📊 KPIs stock","🔄 Point de réappro."])
+
+    with tab_ss:
+        st.markdown(fbox("Formule","SS = Z × √(LT×σD² + D²×σLT²)","Z = facteur service · σD = écart-type demande · LT = délai (j)"), unsafe_allow_html=True)
+        c1,c2,c3 = st.columns(3)
+        with c1: sd=st.number_input("Demande moy. (u/j)",value=50.0,step=1.0); ss2=st.number_input("Écart-type demande σD",value=8.0,step=.5)
+        with c2: slt=st.number_input("Délai fourni. (j)",value=7.0,step=1.0); ssl=st.number_input("Écart-type délai σLT",value=1.5,step=.1)
+        with c3: szo=st.selectbox("Niveau de service",["90% (Z=1.28)","95% (Z=1.65)","97.5% (Z=1.96)","99% (Z=2.33)","99.5% (Z=2.58)"],index=1); scu=st.number_input("Coût unitaire (TND)",value=25.0,step=1.0)
+        Z2={"90% (Z=1.28)":1.28,"95% (Z=1.65)":1.65,"97.5% (Z=1.96)":1.96,"99% (Z=2.33)":2.33,"99.5% (Z=2.58)":2.58}[szo]
+        SS1=Z2*ss2*math.sqrt(slt); SS2=Z2*math.sqrt(slt*ss2**2+sd**2*ssl**2)
+        st.markdown("---")
+        c=st.columns(3)
+        for i,(l,v,u,col) in enumerate([("SS (σD seul)",fmtInt(SS1),"unités","#3b82f6"),("SS (formule complète)",fmtInt(SS2),"unités","#22c55e"),("Coût immobilisé SS",fmtInt(SS2*scu),"TND","#f59e0b")]):
+            with c[i]: st.markdown(mcard(l,v,u,color=col),unsafe_allow_html=True)
+        ns_vals=[85,90,95,97.5,99,99.5]; z_vals=[1.04,1.28,1.65,1.96,2.33,2.58]
+        ss_v=[round(z*math.sqrt(slt*ss2**2+sd**2*ssl**2)) for z in z_vals]
+        fig=go.Figure(go.Bar(x=[f"{n}%" for n in ns_vals],y=ss_v,
+            marker_color=["#22c55e" if abs(n-float(szo.split("%")[0]))<1 else "#3b82f6" for n in ns_vals],
+            text=ss_v,textposition="outside"))
+        fig.update_layout(**dark_layout(),height=260,
+            xaxis=dict(title="Niveau de service",gridcolor="rgba(255,255,255,.05)"),
+            yaxis=dict(title="SS (unités)",gridcolor="rgba(255,255,255,.05)"))
+        st.plotly_chart(fig,use_container_width=True)
+
+    with tab_eoq:
+        st.markdown(fbox("Modèle de Wilson","EOQ = √(2×D×Sc / (Sh×Cu))","D=demande annuelle · Sc=coût passation · Sh=taux stockage · Cu=coût unitaire"), unsafe_allow_html=True)
+        c1,c2,c3=st.columns(3)
+        with c1: eD=st.number_input("Demande annuelle (u)",value=12000,step=100); eSc=st.number_input("Coût passation (TND)",value=150.0,step=5.0)
+        with c2: eCu=st.number_input("Coût unitaire (TND)",value=80.0,step=1.0); eSh=st.number_input("Taux stockage (%)",value=20.0,step=1.0)
+        with c3: eLT=st.number_input("Délai fourni. (j)",value=10,step=1); eDy=st.number_input("Jours ouvr./an",value=250,step=1)
+        h=(eSh/100)*eCu; EOQ=math.sqrt(2*eD*eSc/h) if h>0 else 0
+        nb=eD/EOQ if EOQ>0 else 0; T=eDy/nb if nb>0 else 0; Cp=nb*eSc; Cs=(EOQ/2)*h
+        st.markdown("---")
+        c=st.columns(3); data=[("EOQ",fmtInt(EOQ),"u/cmd","#3b82f6"),("Nb cmd/an",fmt(nb,1),"cmds","#8892a4"),
+            ("Périodicité",fmtInt(T),"jours","#8892a4"),("Coût passation/an",fmtInt(Cp),"TND","#f59e0b"),
+            ("Coût stockage/an",fmtInt(Cs),"TND","#f59e0b"),("Coût total min.",fmtInt(Cp+Cs),"TND","#22c55e")]
+        for i,(l,v,u,col) in enumerate(data):
+            with c[i%3]: st.markdown(mcard(l,v,u,color=col),unsafe_allow_html=True); st.markdown("<div style='margin-bottom:10px'></div>",unsafe_allow_html=True)
+        qty_r=np.linspace(max(10,EOQ*.2),EOQ*2.5,200)
+        fig=go.Figure()
+        fig.add_trace(go.Scatter(x=qty_r,y=[(eD/q)*eSc for q in qty_r],name="Passation",line=dict(color="#60a5fa",width=2)))
+        fig.add_trace(go.Scatter(x=qty_r,y=[(q/2)*h for q in qty_r],name="Stockage",line=dict(color="#f59e0b",width=2)))
+        fig.add_trace(go.Scatter(x=qty_r,y=[(eD/q)*eSc+(q/2)*h for q in qty_r],name="Total",line=dict(color="#22c55e",width=2.5)))
+        fig.add_vline(x=EOQ,line_dash="dash",line_color="#ef4444",annotation_text=f"EOQ={fmtInt(EOQ)}",annotation_font_color="#ef4444")
+        fig.update_layout(**dark_layout(),height=300,
+            xaxis=dict(title="Quantité (u)",gridcolor="rgba(255,255,255,.05)"),
+            yaxis=dict(title="Coût/an (TND)",gridcolor="rgba(255,255,255,.05)"))
+        st.plotly_chart(fig,use_container_width=True)
+
+    with tab_kpi:
+        c1,c2=st.columns(2)
+        with c1: ks=st.number_input("Stock moyen (u)",value=3000,step=100); kv=st.number_input("Ventes annuelles (u)",value=18000,step=100); kval=st.number_input("Valeur stock (TND)",value=240000,step=1000); kca=st.number_input("CA annuel (TND)",value=2400000,step=10000)
+        with c2: kot=st.number_input("Livrées à temps",value=465,step=1); kto=st.number_input("Total livrées",value=490,step=1); klc=st.number_input("Coût logistique (TND)",value=168000,step=1000); ksh=st.number_input("Taux stockage (%)",value=22.0,step=1.0)
+        rot=kv/ks if ks>0 else 0; cov=(ks/kv)*365 if kv>0 else 0; srv=(kot/kto)*100 if kto>0 else 0; crt=(klc/kca)*100 if kca>0 else 0
+        st.markdown("---")
+        c=st.columns(3)
+        kdata=[("Rotation",fmt(rot,1)+"×","/an · >6×=excellent","#22c55e" if rot>=6 else "#f59e0b"),
+               ("Couverture",fmtInt(cov)+"j","15–30j=optimal","#8892a4"),
+               ("Taux service OTD",fmt(srv,1)+"%",">95%=cible","#22c55e" if srv>=95 else "#f59e0b"),
+               ("Coût log/CA",fmt(crt,1)+"%","objectif <8%","#22c55e" if crt<8 else "#ef4444"),
+               ("Coût stockage/an",fmtInt(kval*(ksh/100)),"TND","#f59e0b"),
+               ("DSI",fmt(ks/(kv/365),0)+"j","jours de stock","#8892a4")]
+        for i,(l,v,u,col) in enumerate(kdata):
+            with c[i%3]: st.markdown(mcard(l,v,u,color=col),unsafe_allow_html=True); st.markdown("<div style='margin-bottom:10px'></div>",unsafe_allow_html=True)
+
+    with tab_rp:
+        st.markdown(fbox("Formule","PR = (Dmoy × LT) + SS","Dmoy = demande/jour · LT = délai (j) · SS = stock de sécurité"), unsafe_allow_html=True)
+        c1,c2,c3=st.columns(3)
+        with c1: rd=st.number_input("Demande moy. (u/j)",value=50.0,step=1.0); rlt=st.number_input("Délai fourni. (j)",value=7.0,step=1.0)
+        with c2: rss=st.number_input("Stock sécu. (u)",value=132.0,step=10.0); rdm=st.number_input("Demande max (u/j)",value=70.0,step=1.0)
+        with c3: rltm=st.number_input("Délai max (j)",value=10.0,step=1.0); rcu=st.number_input("Stock actuel (u)",value=500.0,step=10.0)
+        PR=rd*rlt+rss; dL=(rcu-rss)/rd if rd>0 else 0
+        if rcu<=rss: st.markdown("<div class='alert-critical'>🔴 RUPTURE IMMINENTE — Commander immédiatement !</div>",unsafe_allow_html=True)
+        elif rcu<=PR: st.markdown("<div class='alert-warning'>🟡 COMMANDER MAINTENANT — Point de réappro. atteint</div>",unsafe_allow_html=True)
+        else: st.markdown(f"<div class='alert-ok'>🟢 Stock suffisant — {fmtInt(rcu)} u > PR ({fmtInt(PR)} u)</div>",unsafe_allow_html=True)
+        c=st.columns(3)
+        for i,(l,v,u,col) in enumerate([("Point de réappro.",fmtInt(PR),"unités","#3b82f6"),("Jours restants",fmt(dL,1),"jours","#8892a4"),("Délai critique",fmt(dL-rlt,1),"jours avant urgence","#f59e0b")]):
+            with c[i]: st.markdown(mcard(l,v,u,color=col),unsafe_allow_html=True)
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# PAGE PROCESSUS FOURNISSEURS
+# ════════════════════════════════════════════════════════════════════════════════
+elif page == "🏭 Processus fournisseurs":
+    st.markdown("## 🏭 Évaluation processus fournisseurs")
+    c1,c2,c3=st.columns(3)
+    with c1: pn=st.text_input("Fournisseur",value="Würth Tunisie SA")
+    with c2: pr_ref=st.text_input("Référence",value="RB-7204")
+    with c3: pc=st.selectbox("Catégorie",["Composants mécaniques","Matières premières","Fournitures industrielles","Sous-traitance"])
+    c1,c2,c3,c4=st.columns(4)
+    with c1: pt=st.number_input("Commandes passées",value=24,min_value=1); po=st.number_input("Livrées à temps",value=20,min_value=0)
+    with c2: pk=st.number_input("Livrées complètes",value=22,min_value=0); pnc=st.number_input("Non-conformités",value=2,min_value=0)
+    with c3: pla=st.number_input("Délai annoncé (j)",value=7.0,step=.5); plr=st.number_input("Délai réel (j)",value=8.4,step=.1)
+    with c4: ppr=st.number_input("Traitement (h)",value=18.0,step=1.0); pac=st.number_input("Accusé récep. (h)",value=4.0,step=.5)
+    otd=(po/pt)*100; fr=(pk/pt)*100; qu=((pt-pnc)/pt)*100
+    ltp=max(0,100-((plr-pla)/pla)*100) if pla>0 else 0
+    prs=100 if ppr<=8 else 85 if ppr<=24 else 60 if ppr<=48 else 30
+    acs=100 if pac<=2 else 85 if pac<=8 else 60 if pac<=24 else 30
+    gs=otd*.30+fr*.20+qu*.20+ltp*.15+prs*.10+acs*.05
+    col_c=sc(gs); lbl=sl(gs)
+    adv={"Excellent":"Fournisseur stratégique. Envisager un accord-cadre.","Bon":"Performance satisfaisante. Optimiser le délai réel.",
+         "Moyen":"Plan d'amélioration sous 30 jours recommandé.","Insuffisant":"Audit qualité et diversification fournisseur urgent."}[lbl]
+    st.markdown("---")
+    fg=go.Figure(go.Indicator(mode="gauge+number",value=round(gs,1),
+        number={"suffix":"/100","font":{"color":col_c,"family":"DM Mono","size":28}},
+        gauge={"axis":{"range":[0,100]},"bar":{"color":col_c,"thickness":.25},"bgcolor":"#1e2535",
+               "steps":[{"range":[0,55],"color":"rgba(239,68,68,.2)"},{"range":[55,70],"color":"rgba(245,158,11,.2)"},
+                        {"range":[70,85],"color":"rgba(20,184,166,.2)"},{"range":[85,100],"color":"rgba(34,197,94,.2)"}]}))
+    fg.update_layout(paper_bgcolor="rgba(0,0,0,0)",font=dict(color="#8892a4",family="Syne"),height=220,margin=dict(t=10,b=10,l=20,r=20))
+    cg,cd=st.columns([1,2])
+    with cg: st.plotly_chart(fg,use_container_width=True)
+    with cd: st.markdown(f"<div style='background:#1e2535;border-left:4px solid {col_c};border-radius:10px;padding:1.2rem 1.4rem;margin-top:1rem'>"
+                         f"<div style='font-size:1.2rem;font-weight:600;color:{col_c};margin-bottom:8px'>{lbl} — {pn}</div>"
+                         f"<div style='font-size:.85rem;color:#8892a4;line-height:1.6'>{adv}</div></div>",unsafe_allow_html=True)
+    st.markdown("---")
+    crit=[("Livraison à temps (OTD)",otd,f"{po}/{pt} · Poids 30%"),("Fill rate",fr,f"{pk}/{pt} · Poids 20%"),
+          ("Qualité / conformité",qu,f"{pt-pnc}/{pt} · Poids 20%"),("Fiabilité délai",ltp,f"Annoncé:{pla}j Réel:{plr}j · Poids 15%"),
+          ("Traitement commande",prs,f"{ppr}h · Poids 10%"),("Réactivité ACK",acs,f"{pac}h · Poids 5%")]
+    c1,c2=st.columns(2)
+    for i,(nm,scr,nt) in enumerate(crit):
+        cc=sc(scr)
+        with (c1 if i%2==0 else c2):
+            st.markdown(f"<div style='background:#1e2535;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:1rem;margin-bottom:10px'>"
+                        f"<div style='display:flex;justify-content:space-between;margin-bottom:8px'>"
+                        f"<span style='font-size:.85rem;font-weight:600;color:#e8eaf0'>{nm}</span>"
+                        f"<span style='font-family:\"DM Mono\",monospace;color:{cc}'>{scr:.1f}%</span></div>"
+                        f"<div style='background:#0f1117;border-radius:4px;height:6px;overflow:hidden'>"
+                        f"<div style='background:{cc};height:100%;width:{scr}%'></div></div>"
+                        f"<div style='font-size:.7rem;color:#5a6478;margin-top:6px'>{nt}</div></div>",unsafe_allow_html=True)
+    if otd<85: st.markdown(f"<div class='alert-warning'>⏱ OTD insuffisant ({otd:.1f}%) — Négocier des pénalités. Majorer le stock de sécurité.</div>",unsafe_allow_html=True)
+    if qu<95:  st.markdown(f"<div class='alert-warning'>⚠️ {pnc} non-conformités — Audit qualité recommandé.</div>",unsafe_allow_html=True)
+    if plr>pla: st.markdown(f"<div class='alert-warning'>📅 Dérive délai +{plr-pla:.1f}j — Recalculer le point de réappro. avec le délai réel.</div>",unsafe_allow_html=True)
+    if gs>=85:  st.markdown("<div class='alert-ok'>✅ Performance excellente — Envisager un accord-cadre annuel.</div>",unsafe_allow_html=True)
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# PAGE ALERTES STOCK
+# ════════════════════════════════════════════════════════════════════════════════
+elif page == "🔔 Alertes stock":
+    st.markdown("## 🔔 Alertes & Surveillance des stocks")
+    demo_data = {
+        "Référence":      ["RB-7204","IS-316L","VD-0822","CA-1140","JT-2200","MO-1115"],
+        "Désignation":    ["Roulements SKF","Acier inox 316L","Vannes pneumatiques","Câble 4×2.5mm²","Joints toriques","Moteur 0.75kW"],
+        "Stock actuel":   [45,820,380,2400,1250,12],
+        "Stock sécurité": [132,600,80,300,400,8],
+        "Point réappro.": [482,1850,230,900,1200,35],
+        "Conso. moy./j":  [50,120,15,80,95,3],
+        "Lead time (j)":  [7,10,12,8,5,21],
+    }
+    if st.button("📂 Charger démo"): st.session_state.alerts_df = pd.DataFrame(demo_data)
+    if "alerts_df" not in st.session_state: st.session_state.alerts_df = pd.DataFrame(demo_data)
+    edited=st.data_editor(st.session_state.alerts_df,use_container_width=True,num_rows="dynamic",
+        column_config={"Stock actuel":st.column_config.NumberColumn(format="%d"),"Stock sécurité":st.column_config.NumberColumn(format="%d"),
+                       "Point réappro.":st.column_config.NumberColumn(format="%d"),"Conso. moy./j":st.column_config.NumberColumn(format="%d"),
+                       "Lead time (j)":st.column_config.NumberColumn(format="%d")},hide_index=True)
+    if st.button("🔍 Analyser les stocks",type="primary"):
+        df=edited.copy()
+        df["Jours restants"]=np.where(df["Conso. moy./j"]>0,((df["Stock actuel"]-df["Stock sécurité"])/df["Conso. moy./j"]).round(1),np.nan)
+        def status(r):
+            if r["Stock actuel"]<=r["Stock sécurité"]: return "🔴 Rupture"
+            if r["Stock actuel"]<=r["Point réappro."]: return "🟡 Commander"
+            return "🟢 Normal"
+        df["Statut"]=df.apply(status,axis=1)
+        cr=df[df["Statut"]=="🔴 Rupture"]; at=df[df["Statut"]=="🟡 Commander"]; ok=df[df["Statut"]=="🟢 Normal"]
+        c1,c2,c3=st.columns(3)
+        with c1: st.markdown(mcard("🔴 Rupture",str(len(cr)),"articles sous SS",color="#ef4444"),unsafe_allow_html=True)
+        with c2: st.markdown(mcard("🟡 Commander",str(len(at)),"articles entre SS et PR",color="#f59e0b"),unsafe_allow_html=True)
+        with c3: st.markdown(mcard("🟢 Normal",str(len(ok)),"articles OK",color="#22c55e"),unsafe_allow_html=True)
+        fig=go.Figure()
+        fig.add_trace(go.Bar(name="Stock actuel",x=df["Référence"],y=df["Stock actuel"],
+            marker_color=["#ef4444" if s=="🔴 Rupture" else "#f59e0b" if s=="🟡 Commander" else "#22c55e" for s in df["Statut"]]))
+        fig.add_trace(go.Scatter(name="Stock sécu.",x=df["Référence"],y=df["Stock sécurité"],mode="markers+lines",
+            marker=dict(color="#a78bfa",size=8,symbol="diamond"),line=dict(color="#a78bfa",width=1.5,dash="dash")))
+        fig.add_trace(go.Scatter(name="Point réappro.",x=df["Référence"],y=df["Point réappro."],mode="markers+lines",
+            marker=dict(color="#f59e0b",size=8,symbol="triangle-up"),line=dict(color="#f59e0b",width=1.5,dash="dot")))
+        fig.update_layout(**dark_layout(),height=320,
+            xaxis=dict(gridcolor="rgba(255,255,255,.05)"),yaxis=dict(title="Unités",gridcolor="rgba(255,255,255,.05)"))
+        st.plotly_chart(fig,use_container_width=True)
+        st.dataframe(df[["Référence","Désignation","Stock actuel","Stock sécurité","Point réappro.","Jours restants","Statut"]],
+            use_container_width=True,hide_index=True,
+            column_config={"Jours restants":st.column_config.NumberColumn(format="%.1f j")})
+        for _,r in cr.iterrows():
+            st.markdown(f"<div class='alert-critical'>🔴 <strong>{r['Référence']} — {r['Désignation']}</strong> : {int(r['Stock actuel'])} u sous SS ({int(r['Stock sécurité'])} u). Commander immédiatement. LT : {int(r['Lead time (j)'])} j.</div>",unsafe_allow_html=True)
+        for _,r in at.iterrows():
+            st.markdown(f"<div class='alert-warning'>🟡 <strong>{r['Référence']} — {r['Désignation']}</strong> : Point de réappro. atteint. Lancer une commande. LT : {int(r['Lead time (j)'])} j.</div>",unsafe_allow_html=True)
