@@ -51,7 +51,7 @@ def moteur_remplissage_medoil(df_source):
 import streamlit as st
 import io
 
-st.title("📦 Med Oil : Remplissage Automatique du Dashboard Supply")
+st.title(" Med Oil : Remplissage Automatique du Dashboard Supply")
 st.write("Cet outil lit votre base de données Source et remplit votre tableau de bord Cible.")
 
 uploaded_source = st.file_uploader("Importer votre Base de Données (Image 1)", type="xlsx")
@@ -73,3 +73,25 @@ if uploaded_source:
         resultats.to_excel(buffer, index=False)
         st.download_button(label="📥 Télécharger le fichier Excel final", data=buffer.getvalue(),
                            file_name="target_medoil_rempli.xlsx", mime="application/vnd.ms-excel")
+        # --- CONFIGURATION DE LA PAGE ---
+st.set_page_config(page_title="Med Oil Stock Optimizer", layout="wide", page_icon="📦")
+
+# --- CHARGEMENT DU LOGO LOCAL ---
+from PIL import Image # On importe l'outil pour gérer les images
+import os
+
+# On définit le chemin de l'image (elle est dans le même dossier que main.py)
+logo_path = "logo.png" # <--- Vérifie bien que c'est le NOM EXACT de ton fichier sur GitHub
+
+col1, col2 = st.columns([1, 4])
+
+with col1:
+    if os.path.exists(logo_path):
+        image = Image.open(logo_path)
+        st.image(image, width=150)
+    else:
+        st.warning("Logo non trouvé") # Petit message de sécurité si le nom est faux
+
+with col2:
+    st.title("Système d'Optimisation des Stocks")
+    st.subheader("Département Supply Chain & Logistique | Med Oil")
