@@ -1,5 +1,4 @@
 
-streamlit run medoil-supply-app.py
 import streamlit as st
 import math
 import pandas as pd
