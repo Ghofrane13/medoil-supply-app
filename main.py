@@ -8,8 +8,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
-st.set_page_config(page_title="medoil-supply-app
-", page_icon="📦", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="medoil ", page_icon="📦", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
 <style>
