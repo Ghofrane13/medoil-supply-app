@@ -75,7 +75,7 @@ if uploaded_source:
         st.download_button(label="📥 Télécharger le fichier Excel final", data=buffer.getvalue(),
                            file_name="target_medoil_rempli.xlsx", mime="application/vnd.ms-excel")
         # --- CONFIGURATION DE LA PAGE ---
-st.set_page_config(page_title="Med Oil Stock Optimizer", layout="wide", page_icon="📦")
+st.set_page_config(page_title="Med Oil Stock Optimizer", layout="wide", page_icon="")
 
 # --- CHARGEMENT DU LOGO LOCAL ---
 from PIL import Image # On importe l'outil pour gérer les images
