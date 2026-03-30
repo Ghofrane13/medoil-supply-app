@@ -1,6 +1,25 @@
 
 import pandas as pd
 import numpy as np
+ --- CHARGEMENT DU LOGO LOCAL ---
+from PIL import Image # On importe l'outil pour gérer les images
+import os
+
+# On définit le chemin de l'image (elle est dans le même dossier que main.py)
+logo_path = "logo.png" # <--- Vérifie bien que c'est le NOM EXACT de ton fichier sur GitHub
+
+col1, col2 = st.columns([1, 4])
+
+with col1:
+    if os.path.exists(logo_path):
+        image = Image.open(logo_path)
+        st.image(image, width=150)
+    else:
+        st.warning("Logo non trouvé") # Petit message de sécurité si le nom est faux
+
+with col2:
+    st.title("Système d'Optimisation des Stocks")
+    st.subheader("Département Supply Chain & Logistique | Med Oil")
 
 def moteur_remplissage_medoil(df_source):
     # --- 1. Nettoyage et Préparation des données Source ---
@@ -76,22 +95,4 @@ if uploaded_source:
         # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Med Oil Stock Optimizer", layout="wide", page_icon="📦")
 
-# --- CHARGEMENT DU LOGO LOCAL ---
-from PIL import Image # On importe l'outil pour gérer les images
-import os
-
-# On définit le chemin de l'image (elle est dans le même dossier que main.py)
-logo_path = "logo.png" # <--- Vérifie bien que c'est le NOM EXACT de ton fichier sur GitHub
-
-col1, col2 = st.columns([1, 4])
-
-with col1:
-    if os.path.exists(logo_path):
-        image = Image.open(logo_path)
-        st.image(image, width=150)
-    else:
-        st.warning("Logo non trouvé") # Petit message de sécurité si le nom est faux
-
-with col2:
-    st.title("Système d'Optimisation des Stocks")
-    st.subheader("Département Supply Chain & Logistique | Med Oil")
+#
