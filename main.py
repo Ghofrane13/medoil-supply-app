@@ -1,4 +1,4 @@
-!pip install streamlit pandas openpyxl -q
+
 import pandas as pd
 import numpy as np
 
