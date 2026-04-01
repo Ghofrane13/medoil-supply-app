@@ -41,7 +41,7 @@ with st.sidebar:
 )
     st.divider()
  
-pg = st.navigation([
+    pg = st.navigation([
     st.Page(accueil,       title="Accueil",                   icon="🏠"),
     st.Page(import_calcul, title="Import & Calcul automatique",icon="📥"),
     st.Page(calculateurs,  title="Calculateurs",               icon="⚙️"),
