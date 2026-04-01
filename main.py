@@ -33,8 +33,8 @@ with st.sidebar:
     st.markdown(
     """
     <div style="display: flex; align-items: center;">
-        <img src="https://via.placeholder.com/50" style="width: 50px; margin-right: 10px;">
-        <h1 style="margin: 0;">Mon Titre</h1>
+        <img src="logo.png" style="width: 50px; margin-right: 10px;">
+        <h1 style="margin: 0;">Med oil</h1>
     </div>
     """,
     unsafe_allow_html=True
