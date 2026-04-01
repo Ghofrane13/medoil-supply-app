@@ -29,7 +29,6 @@ html, body, [class*="css"] { font-family: 'Syne', sans-serif; }
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("Med oil ")
     st.markdown(
     """
     <div style="display: flex; align-items: center;">
@@ -45,11 +44,7 @@ with st.sidebar:
                     label_visibility="collapsed")
     st.divider()
     st.markdown("<p style='color:#5a6478;font-size:.75rem;'>v2.0 · Supply Chain Manager</p>", unsafe_allow_html=True)
-    # Affiche le logo tout en haut de la sidebar
-    st.logo("logo.png")
 
-# Ensuite, tu ajoutes ton titre normalement
-    
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def fmt(n, d=1):
     if n is None or (isinstance(n, float) and (math.isnan(n) or math.isinf(n))): return "—"
