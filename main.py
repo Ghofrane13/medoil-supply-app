@@ -29,7 +29,8 @@ html, body, [class*="css"] { font-family: 'Syne', sans-serif; }
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("## 📦 SupplyIQ")
+    st.markdown(st.logo("logo.png")
+)
     st.markdown("<p style='color:#8892a4;font-size:.82rem;margin-top:-10px;'>Supply Chain Manager</p>", unsafe_allow_html=True)
     st.divider()
     page = st.radio("Nav", ["🏠 Accueil","📥 Import & Calcul automatique",
