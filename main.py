@@ -27,34 +27,7 @@ html, body, [class*="css"] { font-family: 'Syne', sans-serif; }
     padding:1rem 1.2rem; margin-bottom:.7rem; color:#5eead4; }
 </style>""", unsafe_allow_html=True)
 
-# ── Sidebar ──────────────────────────────────────────────────────────────────
-with st.sidebar:
-    URL_LOGO = "https://raw.githubusercontent.com/Ghofrane13/medoil-supply-app/main/logo.png"
-    st.markdown(
-    f"""
-    <div style="display: flex; align-items: center;">
-        <img src={URL_LOGO} style="width: 50px; margin-right: 10px;">
-        <h1 style="margin: 0;">Med oil</h1>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-    st.divider()
- 
-    pg = st.navigation([
-    st.Page(accueil,       title="Accueil",                   icon="🏠"),
-    st.Page(import_calcul, title="Import & Calcul automatique",icon="📥"),
-    st.Page(calculateurs,  title="Calculateurs",               icon="⚙️"),
-    st.Page(processus,     title="Processus fournisseurs",     icon="🏭"),
-    st.Page(alertes,       title="Alertes stock",              icon="🔔"),
-])
- 
-with st.sidebar:
-    st.divider()
-    st.markdown("<p style='color:#5a6478;font-size:.75rem;'>v2.0 · Supply Chain Manager</p>",
-                unsafe_allow_html=True)
- 
-pg.run()
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def fmt(n, d=1):
     if n is None or (isinstance(n, float) and (math.isnan(n) or math.isinf(n))): return "—"
@@ -631,3 +604,31 @@ elif page == "🔔 Alertes stock":
             st.markdown(f"<div class='alert-critical'>🔴 <strong>{r['Référence']} — {r['Désignation']}</strong> : {int(r['Stock actuel'])} u sous SS ({int(r['Stock sécurité'])} u). Commander immédiatement. LT : {int(r['Lead time (j)'])} j.</div>",unsafe_allow_html=True)
         for _,r in at.iterrows():
             st.markdown(f"<div class='alert-warning'>🟡 <strong>{r['Référence']} — {r['Désignation']}</strong> : Point de réappro. atteint. Lancer une commande. LT : {int(r['Lead time (j)'])} j.</div>",unsafe_allow_html=True)
+# ── Sidebar ──────────────────────────────────────────────────────────────────
+with st.sidebar:
+    URL_LOGO = "https://raw.githubusercontent.com/Ghofrane13/medoil-supply-app/main/logo.png"
+    st.markdown(
+    f"""
+    <div style="display: flex; align-items: center;">
+        <img src={URL_LOGO} style="width: 50px; margin-right: 10px;">
+        <h1 style="margin: 0;">Med oil</h1>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+    st.divider()
+ 
+    pg = st.navigation([
+    st.Page(accueil,       title="Accueil",                   icon="🏠"),
+    st.Page(import_calcul, title="Import & Calcul automatique",icon="📥"),
+    st.Page(calculateurs,  title="Calculateurs",               icon="⚙️"),
+    st.Page(processus,     title="Processus fournisseurs",     icon="🏭"),
+    st.Page(alertes,       title="Alertes stock",              icon="🔔"),
+])
+ 
+with st.sidebar:
+    st.divider()
+    st.markdown("<p style='color:#5a6478;font-size:.75rem;'>v2.0 · Supply Chain Manager</p>",
+                unsafe_allow_html=True)
+ 
+pg.run()
