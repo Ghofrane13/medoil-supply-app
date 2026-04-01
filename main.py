@@ -40,7 +40,7 @@ with st.sidebar:
     unsafe_allow_html=True
 )
     st.divider()
-    page = st.radio("Nav", ["🏠 Accueil","📥 Import & Calcul automatique",
+    page = st.navigation("Nav", ["🏠 Accueil","📥 Import & Calcul automatique",
                              "⚙️ Calculateurs","🏭 Processus fournisseurs","🔔 Alertes stock"],
                     label_visibility="collapsed")
     st.divider()
