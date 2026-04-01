@@ -41,11 +41,11 @@ with st.sidebar:
 )
     st.divider()
     page = st.navigation("Nav", ["🏠 Accueil","📥 Import & Calcul automatique",
-                             "⚙️ Calculateurs","🏭 Processus fournisseurs","🔔 Alertes stock"],
-                    label_visibility="collapsed")
+                             "⚙️ Calculateurs","🏭 Processus fournisseurs","🔔 Alertes stock"]
+                    )
     st.divider()
     st.markdown("<p style='color:#5a6478;font-size:.75rem;'>v2.0 · Supply Chain Manager</p>", unsafe_allow_html=True)
-
+    page.run()
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def fmt(n, d=1):
     if n is None or (isinstance(n, float) and (math.isnan(n) or math.isinf(n))): return "—"
