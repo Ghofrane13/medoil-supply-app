@@ -30,7 +30,15 @@ html, body, [class*="css"] { font-family: 'Syne', sans-serif; }
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("Med oil ")
-    st.markdown("<p style='color:#8892a4;font-size:.82rem;margin-top:-10px;'>Supply Chain Manager</p>", unsafe_allow_html=True)
+    st.markdown(
+    """
+    <div style="display: flex; align-items: center;">
+        <img src="https://via.placeholder.com/50" style="width: 50px; margin-right: 10px;">
+        <h1 style="margin: 0;">Mon Titre</h1>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
     st.divider()
     page = st.radio("Nav", ["🏠 Accueil","📥 Import & Calcul automatique",
                              "⚙️ Calculateurs","🏭 Processus fournisseurs","🔔 Alertes stock"],
