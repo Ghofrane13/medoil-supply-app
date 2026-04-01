@@ -29,10 +29,11 @@ html, body, [class*="css"] { font-family: 'Syne', sans-serif; }
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
+    URL_LOGO = "https://raw.githubusercontent.com/ton-pseudo/ton-depot/main/logo.png"
     st.markdown(
     """
     <div style="display: flex; align-items: center;">
-        <img src="logo.png" style="width: 50px; margin-right: 10px;">
+        <img src={URL_LOGO} style="width: 50px; margin-right: 10px;">
         <h1 style="margin: 0;">Med oil</h1>
     </div>
     """,
