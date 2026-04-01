@@ -14,7 +14,7 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=DM+Serif+Display:ital@0;1&display=swap');
 html, body, [class*="css"] { font-family: 'Syne', sans-serif; }
-.formula-box { background:#0f1117; border-left:3px solid #3b82f6; border-radius:8px; padding:.9rem 1.1rem;
+.formula-box { background:#d5d7de; border-left:3px solid #47b828; border-radius:8px; padding:.9rem 1.1rem;
     font-family:'DM Mono',monospace; font-size:.82rem; color:#8892a4; margin-bottom:1rem; line-height:1.7; }
 .f-eq { color:#60a5fa; font-weight:500; }
 .alert-critical { background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.3); border-radius:10px;
@@ -37,7 +37,11 @@ with st.sidebar:
                     label_visibility="collapsed")
     st.divider()
     st.markdown("<p style='color:#5a6478;font-size:.75rem;'>v2.0 · Supply Chain Manager</p>", unsafe_allow_html=True)
+    # Affiche le logo tout en haut de la sidebar
+    st.logo("logo.png")
 
+# Ensuite, tu ajoutes ton titre normalement
+    st.sidebar.title("Med oil ")
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def fmt(n, d=1):
     if n is None or (isinstance(n, float) and (math.isnan(n) or math.isinf(n))): return "—"
