@@ -40,16 +40,21 @@ with st.sidebar:
     unsafe_allow_html=True
 )
     st.divider()
-    pg = st.navigation([
-    st.Page(accueil, title="Accueil", icon="🏠"),
-    st.Page(import_calcul, title="Import & Calcul automatique", icon="📥"),
-    st.Page(calculateurs, title="Calculateurs", icon="⚙️"),
-    st.Page(processus, title="Processus fournisseurs", icon="🏭"),
-    st.Page(alertes, title="Alertes stock", icon="🔔"),
-    ])
+ 
+pg = st.navigation([
+    st.Page(accueil,       title="Accueil",                   icon="🏠"),
+    st.Page(import_calcul, title="Import & Calcul automatique",icon="📥"),
+    st.Page(calculateurs,  title="Calculateurs",               icon="⚙️"),
+    st.Page(processus,     title="Processus fournisseurs",     icon="🏭"),
+    st.Page(alertes,       title="Alertes stock",              icon="🔔"),
+])
+ 
+with st.sidebar:
     st.divider()
-    st.markdown("<p style='color:#5a6478;font-size:.75rem;'>v2.0 · Supply Chain Manager</p>", unsafe_allow_html=True)
-    page.run()
+    st.markdown("<p style='color:#5a6478;font-size:.75rem;'>v2.0 · Supply Chain Manager</p>",
+                unsafe_allow_html=True)
+ 
+pg.run()
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def fmt(n, d=1):
     if n is None or (isinstance(n, float) and (math.isnan(n) or math.isinf(n))): return "—"
