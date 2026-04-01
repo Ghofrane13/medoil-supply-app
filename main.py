@@ -29,7 +29,7 @@ html, body, [class*="css"] { font-family: 'Syne', sans-serif; }
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
-    URL_LOGO = "https://raw.githubusercontent.com/ton-pseudo/ton-depot/main/logo.png"
+    URL_LOGO = "https://raw.githubusercontent.com/Ghofrane13/medoil-supply-app/main/logo.png"
     st.markdown(
     f"""
     <div style="display: flex; align-items: center;">
