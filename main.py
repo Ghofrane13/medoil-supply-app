@@ -31,7 +31,7 @@ html, body, [class*="css"] { font-family: 'Syne', sans-serif; }
 with st.sidebar:
     URL_LOGO = "https://raw.githubusercontent.com/ton-pseudo/ton-depot/main/logo.png"
     st.markdown(
-    """
+    f"""
     <div style="display: flex; align-items: center;">
         <img src={URL_LOGO} style="width: 50px; margin-right: 10px;">
         <h1 style="margin: 0;">Med oil</h1>
