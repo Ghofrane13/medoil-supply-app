@@ -29,8 +29,7 @@ html, body, [class*="css"] { font-family: 'Syne', sans-serif; }
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown(st.logo("logo.png")
-)
+    st.markdown("Med oil ")
     st.markdown("<p style='color:#8892a4;font-size:.82rem;margin-top:-10px;'>Supply Chain Manager</p>", unsafe_allow_html=True)
     st.divider()
     page = st.radio("Nav", ["🏠 Accueil","📥 Import & Calcul automatique",
@@ -42,7 +41,7 @@ with st.sidebar:
     st.logo("logo.png")
 
 # Ensuite, tu ajoutes ton titre normalement
-    st.sidebar.title("Med oil ")
+    
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def fmt(n, d=1):
     if n is None or (isinstance(n, float) and (math.isnan(n) or math.isinf(n))): return "—"
