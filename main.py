@@ -409,40 +409,83 @@ def calculateurs():
         ["📦 Stock de sécurité", "📐 EOQ (Wilson)", "📊 KPIs stock", "🔄 Point de réappro."])
  
     with tab_ss:
-        st.markdown(fbox("Formule","SS = Z × √(+LT×σD² + D²×σLT²)",
-                         "Z = facteur service · σD = écart-type demande · LT = délai (j)"), unsafe_allow_html=True)
-        c1,c2,c3 = st.columns(3)
+        st.markdown(fbox("Formule","SS = Z × √(LT × σD² + D² × σLT²)",
+                         "Z = facteur service · σD = écart-type demande · LT = délai (j) · σLT = écart-type délai"), unsafe_allow_html=True)
+        
+        c1, c2, c3 = st.columns(3)
+        
+        # Initialisation des variables par défaut
+        ss2 = 0.0  # Écart-type demande (σD)
+        ssl = 0.0  # Écart-type délai (σLT)
+        
         with c1:
-            sd  = st.number_input("Demande moy. (u/j)",    value=50.0, step=1.0)
-            uploaded = st.file_uploader("Déposez votre fichier Excel (.xlsx / .xls)", type=["xlsx","xls"])
+            sd = st.number_input("Demande moy. (u/j)", value=50.0, step=1.0)
+            uploaded = st.file_uploader("Déposez l'historique des ventes (.xlsx)", type=["xlsx","xls"])
+            
+            if uploaded:
+                df = pd.read_excel(uploaded)
+                # On suppose que les données sont dans la première colonne
+                data_ventes = df.iloc[:, 0] 
+                sd = data_ventes.mean()
+                ss2 = data_ventes.std()
+                st.success(f"Calculé : Moy={sd:.1f}, σD={ss2:.1f}")
+
         with c2:
-            slt = st.number_input("Délai fourni. (j)",     value=7.0,  step=1.0)
+            slt = st.number_input("Délai fourni. moyen (j)", value=7.0, step=1.0)
+            # Optionnel : saisie manuelle de l'écart-type du délai si pas de fichier
+            if not uploaded:
+                ss2 = st.number_input("Écart-type demande (σD)", value=10.0, step=1.0)
+            ssl = st.number_input("Écart-type délai (σLT)", value=1.0, step=0.1)
             
         with c3:
             szo = st.selectbox("Niveau de service",
-                               ["95% (produit stratégiques)","96% (produit stratégiques)","97% (produit stratégiques)","98% (produit stratégiques)","99% (produit stratégiques)","90%(intermédiaires)","91%(intermédiaires)","92%(intermédiaires)","93%(intermédiaires)","94%(intermédiaires)","95%(intermédiaires)","80%(faible valeur)","81%(faible valeur)","82%(faible valeur)","83%(faible valeur)","84%(faible valeur)","85%(faible valeur)"], index=1)
-            scu = st.number_input("Coût unitaire (TND)",   value=25.0, step=1.0)
-        Z2  = {"90% (Z=1.28)":1.28,"95% (Z=1.65)":1.65,"97.5% (Z=1.96)":1.96,
-               "99% (Z=2.33)":2.33,"99.5% (Z=2.58)":2.58}[szo]
+                               ["95% (produit stratégiques)","96% (produit stratégiques)","97% (produit stratégiques)","98% (produit stratégiques)","99% (produit stratégiques)","90%(intermédiaires)","91%(intermédiaires)","92%(intermédiaires)","93%(intermédiaires)","94%(intermédiaires)","95%(intermédiaires)","80%(faible valeur)","81%(faible valeur)","82%(faible valeur)","83%(faible valeur)","84%(faible valeur)","85%(faible valeur)"], index=0)
+            scu = st.number_input("Coût unitaire (TND)", value=25.0, step=1.0)
+
+        # Mapping du dictionnaire Z
+        Z2 = {
+            "95% (produit stratégiques)": 1.65, "96% (produit stratégiques)": 1.75,
+            "97% (produit stratégiques)": 1.88, "98% (produit stratégiques)": 2.05,
+            "99% (produit stratégiques)": 2.33, "90%(intermédiaires)": 1.28,
+            "91%(intermédiaires)": 1.34, "92%(intermédiaires)": 1.41,
+            "93%(intermédiaires)": 1.48, "94%(intermédiaires)": 1.55,
+            "95%(intermédiaires)": 1.65, "80%(faible valeur)": 0.84,
+            "81%(faible valeur)": 0.88, "82%(faible valeur)": 0.92,
+            "83%(faible valeur)": 0.95, "84%(faible valeur)": 0.99,
+            "85%(faible valeur)": 1.04
+        }[szo]
+
+        # Calculs des deux méthodes
         SS1 = Z2 * ss2 * math.sqrt(slt)
-        SS2 = Z2 * math.sqrt(slt * ss2**2 + sd**2 * ssl**2)
+        # Formule de King (complète) prenant en compte la variabilité du délai
+        SS2 = Z2 * math.sqrt(slt * (ss2**2) + (sd**2) * (ssl**2))
+
         st.markdown("---")
-        c = st.columns(3)
-        for i,(l,v,u,col) in enumerate([
-            ("SS (σD seul)",          fmtInt(SS1),       "unités", "#3b82f6"),
-            ("SS (formule complète)", fmtInt(SS2),       "unités", "#22c55e"),
-            ("Coût immobilisé SS",    fmtInt(SS2 * scu), "TND",    "#f59e0b"),
-        ]):
-            with c[i]: st.markdown(mcard(l,v,u,color=col), unsafe_allow_html=True)
-        z_vals  = [1.04,1.28,1.65,1.96,2.33,2.58]
-        ns_vals = [85,90,95,97.5,99,99.5]
-        ss_v    = [round(z * math.sqrt(slt*ss2**2 + sd**2*ssl**2)) for z in z_vals]
-        fig = go.Figure(go.Bar(x=[f"{n}%" for n in ns_vals], y=ss_v,
-            marker_color=["#22c55e" if abs(n-float(szo.split("%")[0]))<1 else "#3b82f6" for n in ns_vals],
-            text=ss_v, textposition="outside"))
-        fig.update_layout(**dark_layout(), height=260,
-            xaxis=dict(title="Niveau de service", gridcolor="rgba(255,255,255,.05)"),
-            yaxis=dict(title="SS (unités)",       gridcolor="rgba(255,255,255,.05)"))
+        cols = st.columns(3)
+        results = [
+            ("SS (σD seul)",          f"{int(SS1)}",       "unités", "#3b82f6"),
+            ("SS (formule complète)", f"{int(SS2)}",       "unités", "#22c55e"),
+            ("Coût immobilisé SS",    f"{int(SS2 * scu)}", "TND",    "#f59e0b"),
+        ]
+        
+        for i, (l, v, u, col) in enumerate(results):
+            with cols[i]: 
+                st.markdown(mcard(l, v, u, color=col), unsafe_allow_html=True)
+
+        # Graphique de sensibilité
+        z_vals = [1.04, 1.28, 1.65, 2.05, 2.33]
+        ns_labels = ["85%", "90%", "95%", "98%", "99%"]
+        ss_v = [round(z * math.sqrt(slt * ss2**2 + sd**2 * ssl**2)) for z in z_vals]
+        
+        fig = go.Figure(go.Bar(
+            x=ns_labels, 
+            y=ss_v,
+            marker_color=["#22c55e" if str(n) in szo else "#3b82f6" for n in ns_labels],
+            text=ss_v, 
+            textposition="outside"
+        ))
+        
+        fig.update_layout(**dark_layout(), height=260, margin=dict(t=40, b=0, l=0, r=0))
         st.plotly_chart(fig, use_container_width=True)
  
     with tab_eoq:
