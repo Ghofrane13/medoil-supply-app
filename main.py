@@ -186,12 +186,12 @@ def accueil():
                         f"<div style='font-size:.78rem;color:#5a6478;line-height:1.5'>{de}</div></div>",
                         unsafe_allow_html=True)
     st.divider()
-    st.info("👈 Commencez par **Import & Calcul automatique** dans la barre latérale pour charger votre fichier Excel.")
+    st.info(" Commencez par **Import & Calcul automatique** dans la barre latérale pour charger votre fichier Excel.")
  
  
 # ─────────────────────────────────────────────────────────────────────────────
 def import_calcul():
-    st.markdown("## 📥 Import & Calcul automatique")
+    st.markdown("##  Import & Calcul automatique")
     st.markdown("<p style='color:#8892a4'>Importez votre fichier — EOQ, SS et point de commande calculés pour chaque article</p>",
                 unsafe_allow_html=True)
  
@@ -212,7 +212,7 @@ def import_calcul():
 | `MOQ` / `Taille de lot` | — | Minimum order quantity |
 """)
  
-    st.markdown("#### ⚙️ Paramètres de calcul globaux")
+    st.markdown("####  Paramètres de calcul globaux")
     c1,c2,c3,c4,c5 = st.columns(5)
     with c1: p_z_opt = st.selectbox("Niveau de service", ["90% (Z=1.28)","95% (Z=1.65)","97.5% (Z=1.96)","99% (Z=2.33)"], index=1)
     with c2: p_lt    = st.number_input("Délai défaut (mois)", value=1.0, min_value=0.1, step=0.5)
@@ -222,7 +222,7 @@ def import_calcul():
     Z = {"90% (Z=1.28)":1.28,"95% (Z=1.65)":1.65,"97.5% (Z=1.96)":1.96,"99% (Z=2.33)":2.33}[p_z_opt]
  
     st.divider()
-    st.markdown("#### 📂 Chargement du fichier")
+    st.markdown("####  Chargement du fichier")
     uploaded = st.file_uploader("Déposez votre fichier Excel (.xlsx / .xls)", type=["xlsx","xls"])
     use_demo = st.checkbox("Utiliser les données de démo (votre format)", value=not bool(uploaded))
  
@@ -408,19 +408,19 @@ def calculateurs():
     tab_ss, tab_eoq, tab_kpi, tab_rp = st.tabs(
         ["📦 Stock de sécurité", "📐 EOQ (Wilson)", "📊 KPIs stock", "🔄 Point de réappro."])
  
-    with tab_ss:
-        st.markdown(fbox("Formule","SS = Z × √(LT×σD² + D²×σLT²)",
+        with tab_ss:
+        st.markdown(fbox("Formule","SS = Z × √(+LT×σD² + D²×σLT²)",
                          "Z = facteur service · σD = écart-type demande · LT = délai (j)"), unsafe_allow_html=True)
         c1,c2,c3 = st.columns(3)
         with c1:
             sd  = st.number_input("Demande moy. (u/j)",    value=50.0, step=1.0)
-            ss2 = st.number_input("Écart-type demande σD", value=8.0,  step=.5)
+            uploaded = st.file_uploader("Déposez votre fichier Excel (.xlsx / .xls)", type=["xlsx","xls"])
         with c2:
             slt = st.number_input("Délai fourni. (j)",     value=7.0,  step=1.0)
-            ssl = st.number_input("Écart-type délai σLT",  value=1.5,  step=.1)
+            
         with c3:
             szo = st.selectbox("Niveau de service",
-                               ["90% (Z=1.28)","95% (Z=1.65)","97.5% (Z=1.96)","99% (Z=2.33)","99.5% (Z=2.58)"], index=1)
+                               ["95% (produit stratégiques)","96% (produit stratégiques)","97% (produit stratégiques)","98% (produit stratégiques)","99% (produit stratégiques)","90%(intermédiaires)","91%(intermédiaires)","92%(intermédiaires)","93%(intermédiaires)","94%(intermédiaires)","95%(intermédiaires)","80%(faible valeur)","81%(faible valeur)","82%(faible valeur)","83%(faible valeur)","84%(faible valeur)","85%(faible valeur)"], index=1)
             scu = st.number_input("Coût unitaire (TND)",   value=25.0, step=1.0)
         Z2  = {"90% (Z=1.28)":1.28,"95% (Z=1.65)":1.65,"97.5% (Z=1.96)":1.96,
                "99% (Z=2.33)":2.33,"99.5% (Z=2.58)":2.58}[szo]
