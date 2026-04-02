@@ -408,7 +408,7 @@ def calculateurs():
     tab_ss, tab_eoq, tab_kpi, tab_rp = st.tabs(
         ["📦 Stock de sécurité", "📐 EOQ (Wilson)", "📊 KPIs stock", "🔄 Point de réappro."])
  
-        with tab_ss:
+    with tab_ss:
         st.markdown(fbox("Formule","SS = Z × √(+LT×σD² + D²×σLT²)",
                          "Z = facteur service · σD = écart-type demande · LT = délai (j)"), unsafe_allow_html=True)
         c1,c2,c3 = st.columns(3)
