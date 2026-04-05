@@ -403,7 +403,7 @@ def import_calcul():
  
  
 # ─────────────────────────────────────────────────────────────────────────────
-ef calculateurs():
+def calculateurs():
     st.markdown("## ⚙️ Calculateurs Supply Chain")
     tab_ss, tab_eoq, tab_kpi, tab_rp = st.tabs(
         ["📦 Stock de sécurité", "📐 EOQ (Wilson)", "📊 KPIs stock", "🔄 Point de réappro."])
