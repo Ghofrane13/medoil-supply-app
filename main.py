@@ -403,44 +403,82 @@ def import_calcul():
  
  
 # ─────────────────────────────────────────────────────────────────────────────
-def calculateurs():
+ef calculateurs():
     st.markdown("## ⚙️ Calculateurs Supply Chain")
     tab_ss, tab_eoq, tab_kpi, tab_rp = st.tabs(
         ["📦 Stock de sécurité", "📐 EOQ (Wilson)", "📊 KPIs stock", "🔄 Point de réappro."])
  
     with tab_ss:
-        st.markdown(fbox("Formule","SS = Z × √(+LT×σD2 + D2×σLT2)",
+        st.markdown(fbox("Formule","SS = Z × √(LT×σD² + D²×σLT²)",
                          "Z = facteur service · σD = écart-type demande · LT = délai (j)"), unsafe_allow_html=True)
-        c1,c2,c3 = st.columns(3)
+ 
+        # ── Import de données pour calcul automatique de σD ──────────────────
+        st.markdown("##### 📂 Option : importer vos données de consommation")
+        st.caption("Importez un fichier Excel avec une colonne de consommations historiques — σD sera calculé automatiquement.")
+ 
+        uploaded_ss = st.file_uploader("Fichier Excel (.xlsx / .xls) — colonne de consommations", type=["xlsx","xls"], key="ss_upload")
+ 
+        sd_auto, ss2_auto, ssl_auto = None, None, None
+ 
+        if uploaded_ss:
+            try:
+                df_up = pd.read_excel(uploaded_ss)
+                num_cols = df_up.select_dtypes(include=[np.number]).columns.tolist()
+                if num_cols:
+                    col_chosen = st.selectbox("Colonne de consommation à utiliser", num_cols, key="ss_col")
+                    series = df_up[col_chosen].dropna()
+                    sd_auto  = round(series.mean() / 30, 2)   # demande journalière
+                    ss2_auto = round(float(series.std()), 2)   # écart-type mensuel → converti en journalier
+                    # σD journalier = σ_mensuel / sqrt(30)
+                    ss2_auto_daily = round(ss2_auto / math.sqrt(30), 2)
+                    st.success(f"✅ Données importées — {len(series)} observations · Demande moy./j : **{sd_auto}** · σD journalier : **{ss2_auto_daily}**")
+                else:
+                    st.warning("Aucune colonne numérique détectée dans le fichier.")
+                    ss2_auto_daily = None
+            except Exception as e:
+                st.error(f"Erreur de lecture : {e}")
+                ss2_auto_daily = None
+        else:
+            ss2_auto_daily = None
+ 
+        st.markdown("---")
+        st.markdown("##### ✏️ Paramètres de calcul")
+        c1, c2, c3 = st.columns(3)
         with c1:
-            sd  = st.number_input("Demande moy. (u/j)",    value=50.0, step=1.0)
-            uploaded = st.file_uploader("Déposez votre fichier Excel (.xlsx / .xls)", type=["xlsx","xls"])
+            sd  = st.number_input("Demande moy. (u/j)",    value=float(sd_auto) if sd_auto else 50.0, step=1.0)
+            ss2 = st.number_input("Écart-type demande σD (u/j)", value=float(ss2_auto_daily) if ss2_auto_daily else 8.0, step=0.5,
+                                  help="Calculé automatiquement si fichier importé, sinon saisissez manuellement")
         with c2:
             slt = st.number_input("Délai fourni. (j)",     value=7.0,  step=1.0)
-            
+            ssl = st.number_input("Écart-type délai σLT (j)", value=1.5, step=0.1,
+                                  help="Variabilité du délai fournisseur en jours")
         with c3:
-            szo = st.selectbox("Niveau de service",
-                               ["95% (produit stratégiques)","96% (produit stratégiques)","97% (produit stratégiques)","98% (produit stratégiques)","99% (produit stratégiques)","90%(intermédiaires)","91%(intermédiaires)","92%(intermédiaires)","93%(intermédiaires)","94%(intermédiaires)","95%(intermédiaires)","80%(faible valeur)","81%(faible valeur)","82%(faible valeur)","83%(faible valeur)","84%(faible valeur)","85%(faible valeur)"], index=1)
-            scu = st.number_input("Coût unitaire (TND)",   value=25.0, step=1.0)
-        Z2  = {"95% (produit stratégiques)": 1.65,
-    "96% (produit stratégiques)": 1.75,
-    "97% (produit stratégiques)": 1.88,
-    "98% (produit stratégiques)": 2.05,
-    "99% (produit stratégiques)": 2.33,
-    "90%(intermédiaires)": 1.28,
-    "91%(intermédiaires)": 1.34,
-    "92%(intermédiaires)": 1.41,
-    "93%(intermédiaires)": 1.48,
-    "94%(intermédiaires)": 1.55,
-    "95%(intermédiaires)": 1.65,
-    "80%(faible valeur)": 0.84,
-    "81%(faible valeur)": 0.88,
-    "82%(faible valeur)": 0.92,
-    "83%(faible valeur)": 0.95,
-    "84%(faible valeur)": 0.99,
-    "85%(faible valeur)": 1.04}[szo]
+            Z_MAP_SS = {
+                "95% — Produits stratégiques":  1.65,
+                "96% — Produits stratégiques":  1.75,
+                "97% — Produits stratégiques":  1.88,
+                "98% — Produits stratégiques":  2.05,
+                "99% — Produits stratégiques":  2.33,
+                "90% — Intermédiaires":         1.28,
+                "91% — Intermédiaires":         1.34,
+                "92% — Intermédiaires":         1.41,
+                "93% — Intermédiaires":         1.48,
+                "94% — Intermédiaires":         1.55,
+                "95% — Intermédiaires":         1.65,
+                "80% — Faible valeur":          0.84,
+                "81% — Faible valeur":          0.88,
+                "82% — Faible valeur":          0.92,
+                "83% — Faible valeur":          0.95,
+                "84% — Faible valeur":          0.99,
+                "85% — Faible valeur":          1.04,
+            }
+            szo = st.selectbox("Niveau de service", list(Z_MAP_SS.keys()), index=0)
+            scu = st.number_input("Coût unitaire (TND)", value=25.0, step=1.0)
+ 
+        Z2  = Z_MAP_SS[szo]
         SS1 = Z2 * ss2 * math.sqrt(slt)
         SS2 = Z2 * math.sqrt(slt * ss2**2 + sd**2 * ssl**2)
+ 
         st.markdown("---")
         c = st.columns(3)
         for i,(l,v,u,col) in enumerate([
@@ -449,15 +487,21 @@ def calculateurs():
             ("Coût immobilisé SS",    fmtInt(SS2 * scu), "TND",    "#f59e0b"),
         ]):
             with c[i]: st.markdown(mcard(l,v,u,color=col), unsafe_allow_html=True)
-        z_vals  = [1.04,1.28,1.65,1.96,2.33,2.58]
-        ns_vals = [85,90,95,97.5,99,99.5]
-        ss_v    = [round(z * math.sqrt(slt*ss2**2 + sd**2*ssl**2)) for z in z_vals]
-        fig = go.Figure(go.Bar(x=[f"{n}%" for n in ns_vals], y=ss_v,
-            marker_color=["#22c55e" if abs(n-float(szo.split("%")[0]))<1 else "#3b82f6" for n in ns_vals],
+ 
+        st.markdown("<div style='margin-bottom:14px'></div>", unsafe_allow_html=True)
+ 
+        # Graphique sensibilité
+        z_vals  = [0.84, 1.04, 1.28, 1.65, 1.88, 2.05, 2.33]
+        ns_vals = [80, 85, 90, 95, 97, 98, 99]
+        ss_v    = [round(z * math.sqrt(slt * ss2**2 + sd**2 * ssl**2)) for z in z_vals]
+        current_pct = int(szo.split("%")[0])
+        fig = go.Figure(go.Bar(
+            x=[f"{n}%" for n in ns_vals], y=ss_v,
+            marker_color=["#22c55e" if n == current_pct else "#3b82f6" for n in ns_vals],
             text=ss_v, textposition="outside"))
         fig.update_layout(**dark_layout(), height=260,
             xaxis=dict(title="Niveau de service", gridcolor="rgba(255,255,255,.05)"),
-            yaxis=dict(title="SS (unités)",       gridcolor="rgba(255,255,255,.05)"))
+            yaxis=dict(title="SS (unités)",        gridcolor="rgba(255,255,255,.05)"))
         st.plotly_chart(fig, use_container_width=True)
  
     with tab_eoq:
@@ -561,7 +605,6 @@ def calculateurs():
             ("Délai critique",    fmt(dL-rlt,1),   "jours avant urgence","#f59e0b"),
         ]):
             with c[i]: st.markdown(mcard(l,v,u,color=col), unsafe_allow_html=True)
- 
  
 # ─────────────────────────────────────────────────────────────────────────────
 def processus():
