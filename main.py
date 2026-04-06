@@ -688,81 +688,252 @@ def processus():
 # ─────────────────────────────────────────────────────────────────────────────
 def alertes():
     st.markdown("## 🔔 Alertes & Surveillance des stocks")
-    demo_data = {
-        "Référence":      ["RB-7204","IS-316L","VD-0822","CA-1140","JT-2200","MO-1115"],
-        "Désignation":    ["Roulements SKF","Acier inox 316L","Vannes pneumatiques",
-                           "Câble 4×2.5mm²","Joints toriques","Moteur 0.75kW"],
-        "Stock actuel":   [45,820,380,2400,1250,12],
-        "Stock sécurité": [132,600,80,300,400,8],
-        "Point réappro.": [482,1850,230,900,1200,35],
-        "Conso. moy./j":  [50,120,15,80,95,3],
-        "Lead time (j)":  [7,10,12,8,5,21],
-    }
-    if st.button("📂 Charger démo"):
-        st.session_state.alerts_df = pd.DataFrame(demo_data)
-    if "alerts_df" not in st.session_state:
-        st.session_state.alerts_df = pd.DataFrame(demo_data)
+    st.markdown("<p style='color:#8892a4'>Importez votre tableau de suivi — les alertes sont générées automatiquement</p>",
+                unsafe_allow_html=True)
  
-    edited = st.data_editor(st.session_state.alerts_df, use_container_width=True, num_rows="dynamic",
-        column_config={
-            "Stock actuel":   st.column_config.NumberColumn(format="%d"),
-            "Stock sécurité": st.column_config.NumberColumn(format="%d"),
-            "Point réappro.": st.column_config.NumberColumn(format="%d"),
-            "Conso. moy./j":  st.column_config.NumberColumn(format="%d"),
-            "Lead time (j)":  st.column_config.NumberColumn(format="%d"),
-        }, hide_index=True)
+    # ── HELPER : nettoyer une valeur numérique (gère les virgules, espaces, #DIV/0!) ──
+    def clean_num(v):
+        if v is None: return 0.0
+        s = str(v).strip().replace(" ", "").replace(",", ".")
+        if s in ("#DIV/0!", "#N/A", "#VALEUR!", "#REF!", "", "-", "—"): return 0.0
+        try: return float(s)
+        except: return 0.0
  
-    if st.button("🔍 Analyser les stocks", type="primary"):
-        df = edited.copy()
-        df["Jours restants"] = np.where(
-            df["Conso. moy./j"] > 0,
-            ((df["Stock actuel"] - df["Stock sécurité"]) / df["Conso. moy./j"]).round(1),
+    # ── UPLOAD ───────────────────────────────────────────────────────────────
+    uploaded = st.file_uploader(
+        "📂 Déposez votre fichier Excel de suivi des stocks (.xlsx / .xls)",
+        type=["xlsx", "xls"], key="alertes_upload")
+ 
+    df_alertes = None
+ 
+    if uploaded:
+        try:
+            # Lire toutes les feuilles pour choisir la bonne
+            all_sheets = pd.read_excel(uploaded, sheet_name=None, header=None)
+            names = list(all_sheets.keys())
+            sel = names[0] if len(names) == 1 else st.selectbox("Choisir la feuille", names, key="alert_sheet")
+            raw = all_sheets[sel]
+ 
+            # Détecter la ligne d'en-tête (cherche "Codearticle" ou "article" ou "Stock")
+            hrow = 0
+            for i, row in raw.iterrows():
+                row_str = " ".join([str(v).lower() for v in row if pd.notna(v)])
+                if any(k in row_str for k in ["codearticle", "article", "stock sécurité", "cons moy", "stk du jour"]):
+                    hrow = i
+                    break
+ 
+            df_raw = pd.read_excel(uploaded, sheet_name=sel, header=hrow)
+            df_raw.columns = [str(c).strip() for c in df_raw.columns]
+            df_raw = df_raw.dropna(how="all")
+ 
+            # ── Mapping flexible des colonnes ─────────────────────────────
+            cmap = {}
+            for col in df_raw.columns:
+                cl = col.lower().strip()
+                if "codearticle" in cl or (cl.startswith("code") and "article" in cl):
+                    cmap["Code article"] = col
+                elif cl == "article" or "désignation" in cl or "description" in cl:
+                    cmap["Désignation"] = col
+                elif "stock sécurité" in cl or "stock sécu" in cl or ("stock" in cl and "sécu" in cl):
+                    cmap["Stock Sécurité"] = col
+                elif "stk du jour tot" in cl or ("stk" in cl and "jour" in cl and "tot" in cl):
+                    cmap["Stock actuel"] = col
+                elif "stk du jour ss" in cl or ("stk" in cl and "jour" in cl and "ss" in cl):
+                    cmap["Stk jour SS"] = col
+                elif "cons moy" in cl or "consommation moy" in cl or cl == "cons moy":
+                    cmap["Cons Moy"] = col
+                elif "couverture" in cl:
+                    cmap["Couverture"] = col
+                elif "besoin m1" in cl or cl == "besoin m1":
+                    cmap["Besoin M1"] = col
+                elif "besoin m2" in cl or cl == "besoin m2":
+                    cmap["Besoin M2"] = col
+                elif "besoin m3" in cl or cl == "besoin m3":
+                    cmap["Besoin M3"] = col
+                elif "stock m+1" in cl or cl == "stock m+1":
+                    cmap["Stock M+1"] = col
+                elif "stock m+2" in cl or cl == "stock m+2":
+                    cmap["Stock M+2"] = col
+                elif "stock m+3" in cl or cl == "stock m+3":
+                    cmap["Stock M+3"] = col
+                elif "commande en cours" in cl or "commande" in cl:
+                    cmap["Commande en cours"] = col
+                elif "commentaire" in cl or "comment" in cl:
+                    cmap["Commentaire"] = col
+                elif "source" in cl:
+                    cmap["Source"] = col
+                elif cl in ("um", "unité"):
+                    cmap["UM"] = col
+ 
+            df_mapped = df_raw.rename(columns={v: k for k, v in cmap.items()})
+ 
+            # Colonnes numériques à nettoyer
+            num_cols = ["Stock Sécurité", "Stock actuel", "Stk jour SS", "Cons Moy",
+                        "Besoin M1", "Besoin M2", "Besoin M3",
+                        "Stock M+1", "Stock M+2", "Stock M+3", "Commande en cours"]
+            for c in num_cols:
+                if c in df_mapped.columns:
+                    df_mapped[c] = df_mapped[c].apply(clean_num)
+ 
+            # Filtrer les lignes sans code article
+            if "Code article" in df_mapped.columns:
+                df_mapped = df_mapped[df_mapped["Code article"].notna()]
+                df_mapped = df_mapped[df_mapped["Code article"].astype(str).str.strip() != ""]
+ 
+            df_alertes = df_mapped
+            st.success(f"✅ {len(df_alertes)} articles chargés")
+ 
+        except Exception as e:
+            st.error(f"Erreur de lecture : {e}")
+ 
+    if df_alertes is None or len(df_alertes) == 0:
+        st.info("⬆️ Importez votre fichier Excel pour générer les alertes automatiquement.")
+        st.caption("Format attendu : Codearticle · article · Stock Sécurité · stk du jour tot · Cons Moy · couverture · besoin M1/M2/M3 · Stock M+1/M+2/M+3 · Commentaire")
+        return
+ 
+    # ── GÉNÉRER LES ALERTES ──────────────────────────────────────────────────
+    df = df_alertes.copy()
+ 
+    # Couverture en mois (depuis le fichier ou calculée)
+    if "Couverture" not in df.columns or df["Couverture"].sum() == 0:
+        df["Couverture"] = np.where(
+            df.get("Cons Moy", pd.Series([0]*len(df))) > 0,
+            (df.get("Stock actuel", pd.Series([0]*len(df))) / df["Cons Moy"]).round(1),
             np.nan)
  
-        def status(r):
-            if r["Stock actuel"] <= r["Stock sécurité"]: return "🔴 Rupture"
-            if r["Stock actuel"] <= r["Point réappro."]: return "🟡 Commander"
-            return "🟢 Normal"
-        df["Statut"] = df.apply(status, axis=1)
+    # Statut basé sur couverture et Stock M+1/M+2/M+3
+    def get_status(row):
+        stk     = clean_num(row.get("Stock actuel", 0))
+        ss      = clean_num(row.get("Stock Sécurité", 0))
+        m1      = clean_num(row.get("Stock M+1", 0))
+        m2      = clean_num(row.get("Stock M+2", 0))
+        m3      = clean_num(row.get("Stock M+3", 0))
+        cov     = clean_num(row.get("Couverture", 99))
+        comment = str(row.get("Commentaire", "")).strip()
  
-        cr = df[df["Statut"]=="🔴 Rupture"]
-        at = df[df["Statut"]=="🟡 Commander"]
-        ok = df[df["Statut"]=="🟢 Normal"]
+        if stk <= 0 or stk < ss:
+            return "🔴 Rupture imminente"
+        if m1 < 0 or m2 < 0 or cov < 1:
+            return "🔴 Rupture imminente"
+        if comment.lower().startswith("lancer"):
+            return "🟡 DA à lancer"
+        if m3 < 0 or cov < 1.5:
+            return "🟠 Risque M+3"
+        if cov < 3:
+            return "🟡 DA à lancer"
+        return "🟢 Normal"
  
-        c1,c2,c3 = st.columns(3)
-        with c1: st.markdown(mcard("🔴 Rupture",   str(len(cr)), "articles sous SS",          color="#ef4444"), unsafe_allow_html=True)
-        with c2: st.markdown(mcard("🟡 Commander", str(len(at)), "articles entre SS et PR",    color="#f59e0b"), unsafe_allow_html=True)
-        with c3: st.markdown(mcard("🟢 Normal",    str(len(ok)), "articles OK",                color="#22c55e"), unsafe_allow_html=True)
+    df["Statut"] = df.apply(get_status, axis=1)
+ 
+    # ── KPIs synthèse ────────────────────────────────────────────────────────
+    rupt  = df[df["Statut"] == "🔴 Rupture imminente"]
+    da    = df[df["Statut"].isin(["🟡 DA à lancer", "🟠 Risque M+3"])]
+    ok    = df[df["Statut"] == "🟢 Normal"]
+ 
+    st.markdown("---")
+    st.markdown("#### 📊 Synthèse")
+    c1, c2, c3, c4 = st.columns(4)
+    with c1: st.markdown(mcard("🔴 Rupture imminente",   str(len(rupt)), "articles à commander d'urgence", color="#ef4444"), unsafe_allow_html=True)
+    with c2: st.markdown(mcard("🟡 DA à lancer",         str(len(da)),   "articles nécessitant une DA",    color="#f59e0b"), unsafe_allow_html=True)
+    with c3: st.markdown(mcard("🟢 Normal",              str(len(ok)),   "articles en stock suffisant",    color="#22c55e"), unsafe_allow_html=True)
+    with c4: st.markdown(mcard("📦 Total articles",       str(len(df)),   "articles dans le fichier",       color="#3b82f6"), unsafe_allow_html=True)
+ 
+    # ── TABLEAU COMPLET ──────────────────────────────────────────────────────
+    st.markdown("---")
+    st.markdown("#### 📋 Tableau de bord complet")
+ 
+    # Colonnes à afficher
+    cols_display = ["Code article", "Désignation"]
+    for c in ["Source", "UM", "Stock Sécurité", "Stock actuel", "Cons Moy",
+              "Couverture", "Besoin M1", "Besoin M2", "Besoin M3",
+              "Stock M+1", "Stock M+2", "Stock M+3", "Commentaire", "Statut"]:
+        if c in df.columns:
+            cols_display.append(c)
+ 
+    df_show = df[cols_display].copy()
+ 
+    # Filtre par statut
+    filtre = st.multiselect(
+        "Filtrer par statut",
+        options=["🔴 Rupture imminente", "🟡 DA à lancer", "🟠 Risque M+3", "🟢 Normal"],
+        default=["🔴 Rupture imminente", "🟡 DA à lancer", "🟠 Risque M+3"],
+        key="alert_filter")
+    if filtre:
+        df_show = df_show[df_show["Statut"].isin(filtre)]
+ 
+    col_cfg = {}
+    for c in ["Stock Sécurité", "Stock actuel", "Cons Moy", "Besoin M1",
+              "Besoin M2", "Besoin M3", "Stock M+1", "Stock M+2", "Stock M+3"]:
+        if c in df_show.columns:
+            col_cfg[c] = st.column_config.NumberColumn(c, format="%.1f")
+    if "Couverture" in df_show.columns:
+        col_cfg["Couverture"] = st.column_config.NumberColumn("Couverture (mois)", format="%.1f")
+ 
+    st.dataframe(df_show, use_container_width=True, hide_index=True, column_config=col_cfg)
+ 
+    # ── GRAPHIQUE Stock actuel vs Stock Sécurité ─────────────────────────────
+    if "Stock actuel" in df.columns and "Stock Sécurité" in df.columns:
+        st.markdown("---")
+        st.markdown("#### 📈 Stock actuel vs Stock de sécurité")
+ 
+        labels = df["Code article"].astype(str).tolist()
+        colors = ["#ef4444" if s == "🔴 Rupture imminente"
+                  else "#f59e0b" if s in ("🟡 DA à lancer", "🟠 Risque M+3")
+                  else "#22c55e" for s in df["Statut"]]
  
         fig = go.Figure()
-        fig.add_trace(go.Bar(name="Stock actuel", x=df["Référence"], y=df["Stock actuel"],
-            marker_color=["#ef4444" if s=="🔴 Rupture" else "#f59e0b" if s=="🟡 Commander" else "#22c55e"
-                          for s in df["Statut"]]))
-        fig.add_trace(go.Scatter(name="Stock sécu.", x=df["Référence"], y=df["Stock sécurité"],
-            mode="markers+lines", marker=dict(color="#a78bfa",size=8,symbol="diamond"),
-            line=dict(color="#a78bfa",width=1.5,dash="dash")))
-        fig.add_trace(go.Scatter(name="Point réappro.", x=df["Référence"], y=df["Point réappro."],
-            mode="markers+lines", marker=dict(color="#f59e0b",size=8,symbol="triangle-up"),
-            line=dict(color="#f59e0b",width=1.5,dash="dot")))
-        fig.update_layout(**dark_layout(), height=320,
-            xaxis=dict(gridcolor="rgba(255,255,255,.05)"),
-            yaxis=dict(title="Unités", gridcolor="rgba(255,255,255,.05)"))
+        fig.add_trace(go.Bar(name="Stock actuel", x=labels, y=df["Stock actuel"], marker_color=colors))
+        fig.add_trace(go.Scatter(name="Stock Sécurité", x=labels, y=df["Stock Sécurité"],
+            mode="markers+lines", marker=dict(color="#a78bfa", size=7, symbol="diamond"),
+            line=dict(color="#a78bfa", width=1.5, dash="dash")))
+        if "Stock M+1" in df.columns:
+            fig.add_trace(go.Scatter(name="Stock M+1", x=labels, y=df["Stock M+1"],
+                mode="markers+lines", marker=dict(color="#60a5fa", size=6),
+                line=dict(color="#60a5fa", width=1.2, dash="dot")))
+        fig.update_layout(**dark_layout(), height=360, barmode="group",
+            xaxis=dict(tickangle=-45, gridcolor="rgba(255,255,255,.05)"),
+            yaxis=dict(title="Unités", gridcolor="rgba(255,255,255,.05)"),
+            shapes=[dict(type="line", x0=-0.5, x1=len(labels)-0.5, y0=0, y1=0,
+                         line=dict(color="#ef4444", width=1.5, dash="dash"))])
         st.plotly_chart(fig, use_container_width=True)
  
-        st.dataframe(
-            df[["Référence","Désignation","Stock actuel","Stock sécurité","Point réappro.","Jours restants","Statut"]],
-            use_container_width=True, hide_index=True,
-            column_config={"Jours restants": st.column_config.NumberColumn(format="%.1f j")})
+    # ── ALERTES TEXTUELLES ───────────────────────────────────────────────────
+    st.markdown("---")
+    st.markdown("#### 🚨 Actions prioritaires")
  
-        for _,r in cr.iterrows():
-            st.markdown(f"<div class='alert-critical'>🔴 <strong>{r['Référence']} — {r['Désignation']}</strong> : "
-                        f"{int(r['Stock actuel'])} u sous SS ({int(r['Stock sécurité'])} u). "
-                        f"Commander immédiatement. LT : {int(r['Lead time (j)'])} j.</div>", unsafe_allow_html=True)
-        for _,r in at.iterrows():
-            st.markdown(f"<div class='alert-warning'>🟡 <strong>{r['Référence']} — {r['Désignation']}</strong> : "
-                        f"Point de réappro. atteint. Lancer une commande. LT : {int(r['Lead time (j)'])} j.</div>",
-                        unsafe_allow_html=True)
+    if len(rupt) == 0 and len(da) == 0:
+        st.markdown("<div class='alert-ok'>✅ Aucune alerte critique — tous les stocks sont suffisants.</div>", unsafe_allow_html=True)
  
+    for _, r in rupt.iterrows():
+        code    = str(r.get("Code article", ""))
+        nom     = str(r.get("Désignation", ""))
+        stk     = clean_num(r.get("Stock actuel", 0))
+        ss      = clean_num(r.get("Stock Sécurité", 0))
+        cov     = clean_num(r.get("Couverture", 0))
+        comment = str(r.get("Commentaire", "")).strip()
+        m1      = clean_num(r.get("Stock M+1", 0))
+        detail  = f"Stock actuel : <strong>{stk:,.0f}</strong> | SS : {ss:,.0f} | Couverture : {cov:.1f} mois | Stock M+1 : {m1:,.0f}"
+        da_txt  = f" → <em>{comment}</em>" if comment and comment != "nan" else ""
+        st.markdown(
+            f"<div class='alert-critical'>🔴 <strong>{code} — {nom}</strong>{da_txt}<br/>"
+            f"<span style='font-size:.85rem'>{detail}</span></div>",
+            unsafe_allow_html=True)
+ 
+    for _, r in da.iterrows():
+        code    = str(r.get("Code article", ""))
+        nom     = str(r.get("Désignation", ""))
+        stk     = clean_num(r.get("Stock actuel", 0))
+        ss      = clean_num(r.get("Stock Sécurité", 0))
+        cov     = clean_num(r.get("Couverture", 0))
+        comment = str(r.get("Commentaire", "")).strip()
+        m3      = clean_num(r.get("Stock M+3", 0))
+        detail  = f"Stock actuel : <strong>{stk:,.0f}</strong> | SS : {ss:,.0f} | Couverture : {cov:.1f} mois | Stock M+3 : {m3:,.0f}"
+        da_txt  = f" → <em>{comment}</em>" if comment and comment != "nan" else ""
+        cls     = "alert-warning" if r["Statut"] == "🟡 DA à lancer" else "alert-info"
+        st.markdown(
+            f"<div class='{cls}'>{r['Statut']} <strong>{code} — {nom}</strong>{da_txt}<br/>"
+            f"<span style='font-size:.85rem'>{detail}</span></div>",
+            unsafe_allow_html=True)
  
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
