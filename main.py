@@ -708,19 +708,39 @@ def alertes():
  
     if uploaded:
         try:
-            # Lire toutes les feuilles pour choisir la bonne
-            all_sheets = pd.read_excel(uploaded, sheet_name=None, header=None)
-            names = list(all_sheets.keys())
-            sel = names[0] if len(names) == 1 else st.selectbox("Choisir la feuille", names, key="alert_sheet")
-            raw = all_sheets[sel]
- 
-            # Détecter la ligne d'en-tête (cherche "Codearticle" ou "article" ou "Stock")
-            hrow = 0
-            for i, row in raw.iterrows():
-                row_str = " ".join([str(v).lower() for v in row if pd.notna(v)])
-                if any(k in row_str for k in ["codearticle", "article", "stock sécurité", "cons moy", "stk du jour"]):
-                    hrow = i
-                    break
+            # 1. Lire tout le fichier sans charger les données pour avoir les noms des feuilles
+            excel_file = pd.ExcelFile(uploaded)
+            sheet_names = excel_file.sheet_names
+            
+            st.info(f"Fichier chargé : {len(sheet_names)} feuilles détectées.")
+            
+            # 2. Créer des onglets Streamlit dynamiquement
+            tabs = st.tabs(sheet_names)
+            
+            for i, sheet_name in enumerate(sheet_names):
+                with tabs[i]:
+                    st.subheader(f"Analyse de la feuille : {sheet_name}")
+                    
+                    # --- ÉTAPE DE LECTURE SPÉCIFIQUE ---
+                    # On relit la feuille pour trouver l'en-tête
+                    raw = pd.read_excel(uploaded, sheet_name=sheet_name, header=None)
+                    
+                    hrow = 0
+                    for idx, row in raw.iterrows():
+                        row_str = " ".join([str(v).lower() for v in row if pd.notna(v)])
+                        if any(k in row_str for k in ["codearticle", "article", "stock"]):
+                            hrow = idx
+                            break
+                    
+                    # Chargement final de la feuille en cours
+                    df_current = pd.read_excel(uploaded, sheet_name=sheet_name, header=hrow)
+                    
+                    # --- APPEL DE LA LOGIQUE DE TRAITEMENT ---
+                    # On passe le dataframe à une fonction de traitement
+                    process_and_display_alerts(df_current, sheet_name)
+
+        except Exception as e:
+            st.error(f"Erreur lors du traitement : {e}")
  
             df_raw = pd.read_excel(uploaded, sheet_name=sel, header=hrow)
             df_raw.columns = [str(c).strip() for c in df_raw.columns]
