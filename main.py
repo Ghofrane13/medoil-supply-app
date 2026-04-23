@@ -190,7 +190,7 @@ def accueil():
  
  
 # ─────────────────────────────────────────────────────────────────────────────
-def page_calcul_auto():
+def import_calcul():
     st.markdown(f"""
     <div class='medoil-card'>
         <h2>📥 Import & Calcul Automatique</h2>
