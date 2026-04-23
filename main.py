@@ -190,217 +190,569 @@ def accueil():
  
  
 # ─────────────────────────────────────────────────────────────────────────────
-def import_calcul():
-    st.markdown("##  Import & Calcul automatique")
-    st.markdown("<p style='color:#8892a4'>Importez votre fichier — EOQ, SS et point de commande calculés pour chaque article</p>",
-                unsafe_allow_html=True)
- 
-    with st.expander("📋 Colonnes attendues dans votre fichier Excel"):
+def page_calcul_auto():
+    st.markdown(f"""
+    <div class='medoil-card'>
+        <h2>📥 Import & Calcul Automatique</h2>
+        <p>Importez vos fichiers - Les calculs sont entièrement automatisés</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # ============================================================
+    # PARAMÈTRES DE LA SOURCE (DÉLAIS)
+    # ============================================================
+    SOURCE_CONFIG = {
+        "Export": {"mois": 4, "jours": 120, "label": "Export (120 jours)"},
+        "Local": {"mois": 0.5, "jours": 15, "label": "Local (15 jours)"},
+        "BM": {"mois": 0.066, "jours": 2, "label": "BM (2 jours)"}
+    }
+    
+    # ============================================================
+    # 1. TABLEAU DES CONSOMMATIONS
+    # ============================================================
+    st.markdown("### 📊 1. Tableau des consommations")
+    st.caption("Importez un fichier avec l'historique des consommations pour calculer automatiquement la demande moyenne et l'écart-type")
+    
+    with st.expander("📋 Format attendu - Consommations", expanded=False):
         st.markdown("""
 | Colonne | Obligatoire | Description |
 |---|---|---|
-| `Code article` | ✅ | Identifiant unique |
-| `Description Article` | ✅ | Désignation |
-| `Classe` | — | MP, SF, PF… |
-| `Consommation / mois` | ✅ | Consommation mensuelle moyenne |
-| `Coût de revient` | ✅ | Coût unitaire (TND) |
-| `Consommation/ an` | — | Calculée si absente |
-| `Stock Sécurité` | — | SS existant (pour comparaison) |
-| `Cout total annuelle` | — | Affiché dans le rapport |
-| `Fournisseur` | — | Repris dans l'export |
-| `Délai de livraison` | — | En mois (sinon valeur par défaut) |
-| `MOQ` / `Taille de lot` | — | Minimum order quantity |
-""")
- 
-    st.markdown("####  Paramètres de calcul globaux")
-    c1,c2,c3,c4,c5 = st.columns(5)
-    with c1: p_z_opt = st.selectbox("Niveau de service", ["90% (Z=1.28)","95% (Z=1.65)","97.5% (Z=1.96)","99% (Z=2.33)"], index=1)
-    with c2: p_lt    = st.number_input("Délai défaut (mois)", value=1.0, min_value=0.1, step=0.5)
-    with c3: p_sc    = st.number_input("Coût passation (TND)", value=150.0, min_value=1.0, step=10.0)
-    with c4: p_taux  = st.number_input("Taux stockage (%)", value=20.0, min_value=1.0, step=1.0)
-    with c5: p_var   = st.number_input("Variabilité demande (%)", value=15.0, min_value=1.0, step=1.0)
-    Z = {"90% (Z=1.28)":1.28,"95% (Z=1.65)":1.65,"97.5% (Z=1.96)":1.96,"99% (Z=2.33)":2.33}[p_z_opt]
- 
-    st.divider()
-    st.markdown("####  Chargement du fichier")
-    uploaded = st.file_uploader("Déposez votre fichier Excel (.xlsx / .xls)", type=["xlsx","xls"])
-    use_demo = st.checkbox("Utiliser les données de démo (votre format)", value=not bool(uploaded))
- 
-    df_source = None
- 
-    if uploaded:
-        try:
-            all_sheets = pd.read_excel(uploaded, sheet_name=None, header=None)
-            names = list(all_sheets.keys())
-            sel   = names[0] if len(names)==1 else st.selectbox("Choisir la feuille", names)
-            raw   = all_sheets[sel]
- 
-            hrow = 0
-            for i, row in raw.iterrows():
-                row_str = " ".join([str(v).lower() for v in row if pd.notna(v)])
-                if any(k in row_str for k in ["code","description","article","consommation"]):
-                    hrow = i; break
- 
-            df_raw = pd.read_excel(uploaded, sheet_name=sel, header=hrow)
-            df_raw.columns = [str(c).strip() for c in df_raw.columns]
-            df_raw = df_raw.dropna(how="all")
- 
-            cmap = {}
-            for col in df_raw.columns:
-                cl = col.lower().strip()
-                if "code" in cl and "article" in cl:                       cmap["Code article"] = col
-                elif "description" in cl or "désignation" in cl:           cmap["Description Article"] = col
-                elif cl == "classe":                                        cmap["Classe"] = col
-                elif "consommation" in cl and "mois" in cl:                cmap["Conso mois"] = col
-                elif "coût de revient" in cl or "cout de revient" in cl:   cmap["Coût revient"] = col
-                elif "consommation" in cl and "an" in cl:                  cmap["Conso an"] = col
-                elif "stock" in cl and ("sécu" in cl or "sécurité" in cl): cmap["SS existant"] = col
-                elif "cout total" in cl or "coût total" in cl:             cmap["Coût total an"] = col
-                elif "fournisseur" in cl:                                   cmap["Fournisseur"] = col
-                elif "délai" in cl and "livraison" in cl:                   cmap["Délai livraison (mois)"] = col
-                elif "taille" in cl and "lot" in cl:                        cmap["MOQ"] = col
-                elif cl == "moq":                                            cmap["MOQ"] = col
- 
-            df_source = df_raw.rename(columns={v:k for k,v in cmap.items()})
-            keep = [k for k in ["Code article","Description Article","Classe","Fournisseur",
-                                 "Délai livraison (mois)","MOQ","Conso mois","Coût revient",
-                                 "Conso an","SS existant","Coût total an"] if k in df_source.columns]
-            df_source = df_source[keep].copy()
-            for c in ["Conso mois","Coût revient","Conso an","SS existant","Coût total an","Délai livraison (mois)","MOQ"]:
-                if c in df_source.columns:
-                    df_source[c] = pd.to_numeric(df_source[c], errors="coerce").fillna(0)
-            if "Code article" in df_source.columns:
-                df_source = df_source[df_source["Code article"].notna()]
-                df_source = df_source[df_source["Code article"].astype(str).str.strip() != ""]
-            st.success(f"✅ {len(df_source)} articles chargés depuis « {sel} »")
-        except Exception as e:
-            st.error(f"Erreur de lecture : {e}")
- 
-    if use_demo and df_source is None:
-        df_source = pd.DataFrame({
-            "Code article":       [40007,40010,40011,40014,40015,40036,40042,40055,40062,40063],
-            "Description Article":["NYSOSEL (NICKEL CATALYSEUR)","TERRE TONSIL","PAPIER FILTRE",
-                                   "TOILE FILTRANTE TERRE","PERLITE FILTRATION PAF1","SEL MARIN FIN",
-                                   "MYVEROL 18-04 MYVEROL","TRISYL","VITAMINE A","VITAMINE E"],
-            "Classe":             ["MP"]*10,
-            "Conso mois":         [324,5886,509,32460,959,3747,3147,4432,16,22],
-            "Coût revient":       [59.23,1.709,3.823,49.787,1.700,0,0,8.189,0,0],
-            "Conso an":           [3888,70632,6108,389520,11508,44964,37764,53184,192,264],
-            "SS existant":        [2673,6353,2859,68,1171,1560,20000,5000,74,100],
-            "Coût total an":      [230286,120710,23351,19393032,19564,0,0,435524,0,0],
-        })
-        st.info("📊 Données de démo chargées — basées sur votre fichier Excel d'origine")
- 
-    if df_source is not None and len(df_source) > 0:
-        with st.expander("👁 Aperçu des données sources", expanded=False):
-            st.dataframe(df_source, use_container_width=True, hide_index=True)
- 
-        results = []
-        for _, row in df_source.iterrows():
-            cm  = float(row.get("Conso mois", 0) or 0)
-            ca  = float(row.get("Conso an", 0) or cm*12) or cm*12
-            cu  = float(row.get("Coût revient", 0) or 0)
-            lt  = float(row.get("Délai livraison (mois)", p_lt) or p_lt)
-            moq = float(row.get("MOQ", 0) or 0)
- 
-            ss   = calc_ss(cm, z=Z, lt_mois=lt, variab=p_var/100)
-            eoq, _, _ = calc_eoq(ca, cu, sc_cost=p_sc, taux=p_taux/100)
-            pr   = calc_pr(cm, lt, ss)
-            css  = round(ss * cu, 2) if cu > 0 else 0
-            diff = round(eoq - moq) if moq > 0 else ""
- 
-            results.append({
-                "Code article":          row.get("Code article",""),
-                "Description Article":   row.get("Description Article",""),
-                "Classe":                row.get("Classe",""),
-                "Fournisseur":           row.get("Fournisseur",""),
-                "Délai livraison (mois)":lt,
-                "Incertitude":           p_var/100,
-                "EOQ":                   eoq,
-                "MOQ":                   int(moq) if moq>0 else "",
-                "Diff MOQ EOQ":          diff,
-                "Stock sécurité":        ss,
-                "SS existant":           float(row.get("SS existant", 0) or 0),
-                "Coût SS":               css,
-                "Point de commande":     pr,
-                "Conso mois":            cm,
-                "Coût revient":          cu,
-                "Conso an":              ca,
-                "Coût total an":         float(row.get("Coût total an", 0) or 0),
-            })
- 
-        df_res = pd.DataFrame(results)
- 
-        st.divider()
-        st.markdown("#### 🧮 Tableau des calculs")
-        disp = df_res[["Code article","Description Article","Classe",
-                       "EOQ","MOQ","Diff MOQ EOQ","Stock sécurité","Coût SS","Point de commande"]].copy()
-        st.dataframe(disp, use_container_width=True, hide_index=True,
-            column_config={
-                "EOQ":               st.column_config.NumberColumn("EOQ (u)",           format="%d"),
-                "MOQ":               st.column_config.NumberColumn("MOQ (u)"),
-                "Diff MOQ EOQ":      st.column_config.NumberColumn("Diff MOQ/EOQ"),
-                "Stock sécurité":    st.column_config.NumberColumn("Stock sécu. (u)",   format="%d"),
-                "Coût SS":           st.column_config.NumberColumn("Coût SS (TND)",      format="%.2f"),
-                "Point de commande": st.column_config.NumberColumn("Point commande (u)", format="%d"),
-            })
- 
-        st.markdown("---")
-        st.markdown("#### 📊 Synthèse")
-        c1,c2,c3,c4 = st.columns(4)
-        eoq_mean = df_res[df_res["EOQ"]>0]["EOQ"].mean()
-        ecarts   = (df_res["Stock sécurité"] > df_res["SS existant"] * 1.3).sum()
-        with c1: st.markdown(mcard("Articles traités",    str(len(df_res)),                   "articles"),                               unsafe_allow_html=True)
-        with c2: st.markdown(mcard("Coût total SS",       f"{df_res['Coût SS'].sum():,.0f}",  "TND immobilisés",  color="#f59e0b"),       unsafe_allow_html=True)
-        with c3: st.markdown(mcard("EOQ moyen",           fmtInt(eoq_mean),                    "u / commande",     color="#22c55e"),       unsafe_allow_html=True)
-        with c4: st.markdown(mcard("SS à réviser",        str(ecarts),                         "SS calculé > 130% SS fichier", color="#ef4444"), unsafe_allow_html=True)
- 
-        st.markdown("---")
-        st.markdown("#### 📈 EOQ · Stock de sécurité · Point de commande")
-        labels = df_res["Code article"].astype(str).tolist()
-        fig = go.Figure()
-        fig.add_trace(go.Bar(name="EOQ", x=labels, y=df_res["EOQ"], marker_color="#3b82f6",
-                             text=df_res["EOQ"].apply(lambda v: f"{int(v):,}" if v>0 else ""), textposition="outside"))
-        fig.add_trace(go.Bar(name="Stock sécurité", x=labels, y=df_res["Stock sécurité"], marker_color="#f59e0b",
-                             text=df_res["Stock sécurité"].apply(lambda v: f"{int(v):,}"), textposition="outside"))
-        fig.add_trace(go.Scatter(name="Point de commande", x=labels, y=df_res["Point de commande"],
-                                 mode="markers+lines", marker=dict(color="#ef4444",size=9,symbol="diamond"),
-                                 line=dict(color="#ef4444",width=2,dash="dash")))
-        if df_res["SS existant"].sum() > 0:
-            fig.add_trace(go.Scatter(name="SS existant (fichier)", x=labels, y=df_res["SS existant"],
-                                     mode="markers+lines", marker=dict(color="#a78bfa",size=7,symbol="circle"),
-                                     line=dict(color="#a78bfa",width=1.5,dash="dot")))
-        fig.update_layout(**dark_layout(), barmode="group", height=420,
-                          xaxis=dict(title="Article", gridcolor="rgba(255,255,255,.05)"),
-                          yaxis=dict(title="Unités",  gridcolor="rgba(255,255,255,.05)"))
-        st.plotly_chart(fig, use_container_width=True)
- 
-        if df_res["SS existant"].sum() > 0:
-            st.markdown("---")
-            st.markdown("#### 🔍 SS calculé vs SS dans votre fichier")
-            comp = df_res[["Code article","Description Article","SS existant","Stock sécurité"]].copy()
-            comp["Écart (u)"] = comp["Stock sécurité"] - comp["SS existant"]
-            comp["Écart %"]   = np.where(comp["SS existant"]>0,
-                                         (comp["Écart (u)"] / comp["SS existant"] * 100).round(1), None)
-            st.dataframe(comp, use_container_width=True, hide_index=True,
-                column_config={
-                    "SS existant":    st.column_config.NumberColumn("SS fichier",  format="%d"),
-                    "Stock sécurité": st.column_config.NumberColumn("SS calculé",  format="%d"),
-                    "Écart (u)":      st.column_config.NumberColumn("Écart (u)",   format="%d"),
-                    "Écart %":        st.column_config.NumberColumn("Écart %",     format="%.1f%%"),
-                })
- 
-        st.markdown("---")
-        st.markdown("#### 💾 Export — tableau rempli")
-        st.info("Le fichier exporté reprend exactement le format de votre tableau d'origine avec toutes les colonnes calculées.")
-        st.download_button(
-            label="⬇️ Télécharger le tableau Excel rempli",
-            data=build_excel(df_res),
-            file_name="supply_chain_calculs.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            type="primary",
+| `Code article` | ✅ | Identifiant unique du produit |
+| `Période` | ✅ | Mois/Date de la consommation |
+| `Quantité consommée` | ✅ | Quantité consommée sur la période |
+        """)
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        uploaded_conso = st.file_uploader(
+            "📂 Fichier des consommations (.xlsx / .xls)",
+            type=["xlsx", "xls"],
+            key="conso_upload"
         )
- 
+    
+    with col2:
+        periode_analyse = st.selectbox(
+            "Période d'analyse",
+            ["3 derniers mois", "6 derniers mois", "12 derniers mois", "Tous les historiques"],
+            index=0
+        )
+    
+    # ============================================================
+    # 2. TABLEAU DES PRODUITS
+    # ============================================================
+    st.markdown("### 📦 2. Tableau des références produits")
+    st.caption("Importez le fichier avec les informations de base de chaque produit")
+    
+    with st.expander("📋 Format attendu - Références produits", expanded=False):
+        st.markdown("""
+| Colonne | Obligatoire | Description |
+|---|---|---|
+| `Code article` | ✅ | Identifiant unique (doit correspondre au tableau consommations) |
+| `Article` | ✅ | Désignation du produit |
+| `Source` | ✅ | Export / Local / BM (définit le délai automatiquement) |
+| `Unité` | — | Unité de mesure (kg, L, u, etc.) |
+| `Coût unitaire` | ✅ | Coût d'achat unitaire (TND) |
+| `Coût passation` | — | Coût par commande (TND) - valeur par défaut si absent |
+        """)
+    
+    uploaded_produits = st.file_uploader(
+        "📂 Fichier des références produits (.xlsx / .xls)",
+        type=["xlsx", "xls"],
+        key="produits_upload"
+    )
+    
+    # ============================================================
+    # PARAMÈTRES GLOBAUX (simplifiés)
+    # ============================================================
+    st.markdown("### ⚙️ Paramètres généraux")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        taux_stockage = st.number_input("Taux de stockage (%)", value=20.0, min_value=1.0, step=1.0,
+                                        help="Coût de détention du stock (assurance, entreposage, etc.)")
+    
+    with col2:
+        cout_passation_defaut = st.number_input("Coût passation par défaut (TND)", value=150.0, min_value=10.0, step=10.0,
+                                                help="Utilisé si non spécifié dans le tableau produits")
+    
+    with col3:
+        variabilite_defaut = st.slider("Variabilité par défaut (%)", 5, 30, 15,
+                                       help="Écart-type estimé si non calculable")
+    
+    # ============================================================
+    # BOUTON DE CALCUL
+    # ============================================================
+    st.markdown("---")
+    
+    calcul_disabled = (uploaded_conso is None) or (uploaded_produits is None)
+    
+    if st.button("🚀 LANCER LE CALCUL AUTOMATIQUE", type="primary", disabled=calcul_disabled, use_container_width=True):
+        
+        if uploaded_conso is None or uploaded_produits is None:
+            st.warning("Veuillez importer les deux fichiers (consommations et références produits)")
+            return
+        
+        try:
+            # ============================================================
+            # CHARGEMENT ET TRAITEMENT DES CONSOMMATIONS
+            # ============================================================
+            df_conso_raw = pd.read_excel(uploaded_conso)
+            df_conso_raw.columns = [str(c).strip() for c in df_conso_raw.columns]
+            
+            # Mapping colonnes consommations
+            cmap_conso = {}
+            for col in df_conso_raw.columns:
+                cl = col.lower().strip()
+                if "code" in cl and "article" in cl:
+                    cmap_conso["Code article"] = col
+                elif "periode" in cl or "date" in cl or "mois" in cl:
+                    cmap_conso["Période"] = col
+                elif "quantite" in cl or "consommation" in cl or "qte" in cl:
+                    cmap_conso["Quantité"] = col
+            
+            df_conso = df_conso_raw.rename(columns={v: k for k, v in cmap_conso.items()})
+            df_conso["Quantité"] = df_conso["Quantité"].apply(clean_num)
+            df_conso["Code article"] = df_conso["Code article"].astype(str).str.strip()
+            
+            st.success(f"✅ {len(df_conso)} lignes de consommations chargées")
+            
+            # ============================================================
+            # CHARGEMENT DES PRODUITS
+            # ============================================================
+            df_produits_raw = pd.read_excel(uploaded_produits)
+            df_produits_raw.columns = [str(c).strip() for c in df_produits_raw.columns]
+            
+            # Mapping colonnes produits
+            cmap_produits = {}
+            for col in df_produits_raw.columns:
+                cl = col.lower().strip()
+                if "code" in cl and "article" in cl:
+                    cmap_produits["Code article"] = col
+                elif "article" in cl and "code" not in cl:
+                    cmap_produits["Article"] = col
+                elif cl == "source":
+                    cmap_produits["Source"] = col
+                elif "unite" in cl or "um" in cl:
+                    cmap_produits["Unité"] = col
+                elif "cout" in cl or "coût" in cl:
+                    if "passation" in cl:
+                        cmap_produits["Coût passation"] = col
+                    else:
+                        cmap_produits["Coût unitaire"] = col
+            
+            df_produits = df_produits_raw.rename(columns={v: k for k, v in cmap_produits.items()})
+            
+            # Nettoyage
+            for c in ["Coût unitaire", "Coût passation"]:
+                if c in df_produits.columns:
+                    df_produits[c] = df_produits[c].apply(clean_num)
+            
+            df_produits["Code article"] = df_produits["Code article"].astype(str).str.strip()
+            
+            # Valeurs par défaut
+            if "Coût passation" not in df_produits.columns:
+                df_produits["Coût passation"] = cout_passation_defaut
+            else:
+                df_produits["Coût passation"] = df_produits["Coût passation"].fillna(cout_passation_defaut)
+            
+            if "Source" not in df_produits.columns:
+                df_produits["Source"] = "Local"
+            
+            st.success(f"✅ {len(df_produits)} produits chargés")
+            
+            # ============================================================
+            # CALCUL DE LA DEMANDE MOYENNE ET ÉCART-TYPE PAR PRODUIT
+            # ============================================================
+            st.markdown("---")
+            st.markdown("#### 📈 Calcul des statistiques de consommation")
+            
+            stats_produits = []
+            
+            for code in df_produits["Code article"].unique():
+                conso_produit = df_conso[df_conso["Code article"] == code]["Quantité"].dropna()
+                
+                if len(conso_produit) >= 2:
+                    moyenne_mensuelle = conso_produit.mean()
+                    ecart_type = conso_produit.std()
+                    nb_observations = len(conso_produit)
+                elif len(conso_produit) == 1:
+                    moyenne_mensuelle = conso_produit.iloc[0]
+                    ecart_type = moyenne_mensuelle * (variabilite_defaut / 100)
+                    nb_observations = 1
+                else:
+                    moyenne_mensuelle = 0
+                    ecart_type = 0
+                    nb_observations = 0
+                
+                stats_produits.append({
+                    "Code article": code,
+                    "Conso moyenne/mois": moyenne_mensuelle,
+                    "Écart-type mensuel": ecart_type,
+                    "Nb observations": nb_observations,
+                    "CV (%)": (ecart_type / moyenne_mensuelle * 100) if moyenne_mensuelle > 0 else 0
+                })
+            
+            df_stats = pd.DataFrame(stats_produits)
+            
+            # Affichage des statistiques
+            st.dataframe(
+                df_stats,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Conso moyenne/mois": st.column_config.NumberColumn("Conso moyenne/mois", format="%.1f"),
+                    "Écart-type mensuel": st.column_config.NumberColumn("Écart-type mensuel", format="%.1f"),
+                    "CV (%)": st.column_config.NumberColumn("CV (%)", format="%.1f%%"),
+                }
+            )
+            
+            # ============================================================
+            # ANALYSE ABC pour déterminer le niveau de service
+            # ============================================================
+            st.markdown("---")
+            st.markdown("#### 🏷️ Analyse ABC - Niveau de service")
+            
+            # Fusion des données
+            df_merged = df_produits.merge(df_stats, on="Code article", how="left")
+            
+            # Calcul du CA pondéré pour l'analyse ABC
+            df_merged["CA annuel"] = df_merged["Conso moyenne/mois"] * 12 * df_merged["Coût unitaire"]
+            df_merged = df_merged.sort_values("CA annuel", ascending=False)
+            df_merged["CA cumulé"] = df_merged["CA annuel"].cumsum()
+            df_merged["CA cumulé %"] = df_merged["CA cumulé"] / df_merged["CA annuel"].sum() * 100
+            
+            # Définition des classes ABC
+            def assign_abc(row):
+                if row["CA cumulé %"] <= 70:
+                    return "A (70% CA)"
+                elif row["CA cumulé %"] <= 90:
+                    return "B (20% CA)"
+                else:
+                    return "C (10% CA)"
+            
+            df_merged["Classe ABC"] = df_merged.apply(assign_abc, axis=1)
+            
+            # Niveau de service selon classe ABC
+            service_levels = {
+                "A (70% CA)": {"label": "99% (Z=2.33)", "z": 2.33},
+                "B (20% CA)": {"label": "95% (Z=1.65)", "z": 1.65},
+                "C (10% CA)": {"label": "90% (Z=1.28)", "z": 1.28}
+            }
+            
+            df_merged["Niveau service"] = df_merged["Classe ABC"].map(lambda x: service_levels[x]["label"])
+            df_merged["Z"] = df_merged["Classe ABC"].map(lambda x: service_levels[x]["z"])
+            
+            # Affichage de l'analyse ABC
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.dataframe(
+                    df_merged[["Code article", "Article", "CA annuel", "CA cumulé %", "Classe ABC"]],
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "CA annuel": st.column_config.NumberColumn("CA annuel (TND)", format="%.0f"),
+                        "CA cumulé %": st.column_config.NumberColumn("CA cumulé %", format="%.1f%%"),
+                    }
+                )
+            
+            with col2:
+                # Graphique Pareto
+                fig, ax = plt.subplots(figsize=(6, 4))
+                ax.bar(df_merged["Code article"].astype(str), df_merged["CA annuel"], color=COLORS["primary"], alpha=0.7, label="CA par article")
+                ax2 = ax.twinx()
+                ax2.plot(df_merged["Code article"].astype(str), df_merged["CA cumulé %"], color=COLORS["secondary"], marker='o', linewidth=2, label="CA cumulé %")
+                ax2.axhline(y=70, color='green', linestyle='--', alpha=0.5, label="Seuil A (70%)")
+                ax2.axhline(y=90, color='orange', linestyle='--', alpha=0.5, label="Seuil B (90%)")
+                ax.set_xlabel("Article")
+                ax.set_ylabel("CA annuel (TND)")
+                ax2.set_ylabel("CA cumulé (%)")
+                ax.tick_params(axis='x', rotation=45)
+                st.pyplot(fig)
+                plt.close()
+            
+            # ============================================================
+            # CALCULS FINAUX (EOQ, SS, PR)
+            # ============================================================
+            st.markdown("---")
+            st.markdown("#### 📊 Résultats des calculs")
+            
+            results = []
+            
+            for _, row in df_merged.iterrows():
+                code = row["Code article"]
+                conso_mensuelle = row["Conso moyenne/mois"]
+                conso_annuelle = conso_mensuelle * 12
+                cout_unitaire = row["Coût unitaire"]
+                cout_passation = row["Coût passation"]
+                source = row["Source"]
+                z = row["Z"]
+                ecart_type = row["Écart-type mensuel"] if row["Écart-type mensuel"] > 0 else conso_mensuelle * (variabilite_defaut / 100)
+                
+                # Délai selon source
+                delay = SOURCE_CONFIG.get(source, SOURCE_CONFIG["Local"])
+                lt_mois = delay["mois"]
+                lt_jours = delay["jours"]
+                
+                # Calculs
+                if conso_mensuelle > 0 and cout_unitaire > 0:
+                    # Stock de sécurité avec variabilité
+                    variabilite = (ecart_type / conso_mensuelle) if conso_mensuelle > 0 else variabilite_defaut / 100
+                    ss = calc_ss(conso_mensuelle, z=z, lt_mois=lt_mois, variab=variabilite)
+                    
+                    # EOQ
+                    eoq, nb_cmd, ct_min = calc_eoq(conso_annuelle, cout_unitaire, cout_passation, taux_stockage/100)
+                    
+                    # Point de commande
+                    pr = calc_pr(conso_mensuelle, lt_mois, ss)
+                    
+                    # Coût du SS
+                    cout_ss = round(ss * cout_unitaire * (taux_stockage/100), 2)
+                else:
+                    ss = 0
+                    eoq = 0
+                    pr = 0
+                    cout_ss = 0
+                    nb_cmd = 0
+                
+                results.append({
+                    "Code article": code,
+                    "Article": row.get("Article", ""),
+                    "Source": source,
+                    "Délai (jours)": lt_jours,
+                    "Unité": row.get("Unité", ""),
+                    "Conso moyenne/mois": conso_mensuelle,
+                    "Écart-type": ecart_type,
+                    "Coût unitaire": cout_unitaire,
+                    "Coût passation": cout_passation,
+                    "Classe ABC": row["Classe ABC"],
+                    "Niveau service": row["Niveau service"],
+                    "Z": z,
+                    "EOQ": eoq,
+                    "Stock sécurité": ss,
+                    "Point commande": pr,
+                    "Coût SS (annuel)": cout_ss,
+                    "Nb commandes/an": nb_cmd
+                })
+            
+            df_results = pd.DataFrame(results)
+            
+            # ============================================================
+            # AFFICHAGE DES RÉSULTATS
+            # ============================================================
+            
+            # Tableau principal
+            display_cols = ["Code article", "Article", "Source", "Délai (jours)", "Unité",
+                           "Conso moyenne/mois", "Classe ABC", "Niveau service",
+                           "EOQ", "Stock sécurité", "Point commande", "Coût SS (annuel)"]
+            
+            st.dataframe(
+                df_results[display_cols],
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Conso moyenne/mois": st.column_config.NumberColumn("Conso moyenne/mois", format="%.1f"),
+                    "Coût unitaire": st.column_config.NumberColumn("Coût unitaire (TND)", format="%.2f"),
+                    "Coût SS (annuel)": st.column_config.NumberColumn("Coût SS annuel (TND)", format="%.2f"),
+                    "EOQ": st.column_config.NumberColumn("EOQ", format="%d"),
+                    "Stock sécurité": st.column_config.NumberColumn("Stock sécurité", format="%d"),
+                    "Point commande": st.column_config.NumberColumn("Point commande", format="%d"),
+                }
+            )
+            
+            # KPIs
+            st.markdown("---")
+            st.markdown("#### 📈 Synthèse des résultats")
+            
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.markdown(f"""
+                <div class='medoil-card' style='text-align:center'>
+                    <div class='metric-label'>Produits traités</div>
+                    <div class='metric-value'>{len(df_results)}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown(f"""
+                <div class='medoil-card' style='text-align:center'>
+                    <div class='metric-label'>SS total</div>
+                    <div class='metric-value'>{fmtInt(df_results['Stock sécurité'].sum())} u</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with col3:
+                st.markdown(f"""
+                <div class='medoil-card' style='text-align:center'>
+                    <div class='metric-label'>Coût SS annuel</div>
+                    <div class='metric-value'>{fmtInt(df_results['Coût SS (annuel)'].sum())} TND</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with col4:
+                eoq_mean = df_results[df_results["EOQ"] > 0]["EOQ"].mean()
+                st.markdown(f"""
+                <div class='medoil-card' style='text-align:center'>
+                    <div class='metric-label'>EOQ moyen</div>
+                    <div class='metric-value'>{fmtInt(eoq_mean)} u</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Graphique
+            st.markdown("---")
+            st.markdown("#### 📊 Visualisation")
+            
+            fig = go.Figure()
+            
+            fig.add_trace(go.Bar(
+                name="EOQ",
+                x=df_results["Code article"].astype(str),
+                y=df_results["EOQ"],
+                marker_color=COLORS["primary"],
+                text=df_results["EOQ"].apply(lambda v: f"{int(v):,}" if v > 0 else ""),
+                textposition="outside"
+            ))
+            
+            fig.add_trace(go.Bar(
+                name="Stock Sécurité",
+                x=df_results["Code article"].astype(str),
+                y=df_results["Stock sécurité"],
+                marker_color=COLORS["secondary"],
+                text=df_results["Stock sécurité"].apply(lambda v: f"{int(v):,}"),
+                textposition="outside"
+            ))
+            
+            fig.add_trace(go.Scatter(
+                name="Point commande",
+                x=df_results["Code article"].astype(str),
+                y=df_results["Point commande"],
+                mode="markers+lines",
+                marker=dict(color=COLORS["danger"], size=9, symbol="diamond"),
+                line=dict(color=COLORS["danger"], width=2, dash="dash")
+            ))
+            
+            fig.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                height=450,
+                barmode="group",
+                xaxis=dict(title="Article", tickangle=-45),
+                yaxis=dict(title="Unités")
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # ============================================================
+            # EXPORT
+            # ============================================================
+            st.markdown("---")
+            st.markdown("#### 💾 Export des résultats")
+            
+            # Création du fichier Excel avec toutes les données
+            excel_buf = build_excel_complete_with_stats(df_results, df_stats, df_merged)
+            
+            st.download_button(
+                label="⬇️ Télécharger le fichier Excel complet",
+                data=excel_buf,
+                file_name=f"medoil_supply_chain_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                type="primary"
+            )
+            
+            # Stockage dans session_state pour les autres pages
+            st.session_state['df_calculs'] = df_results
+            st.session_state['df_stats'] = df_stats
+            st.session_state['df_abc'] = df_merged
+            
+        except Exception as e:
+            st.error(f"Erreur lors du calcul : {e}")
+            st.exception(e)
+    
+    else:
+        if calcul_disabled:
+            st.info("📂 Veuillez importer les deux fichiers Excel pour lancer le calcul automatique")
+        else:
+            st.info("🔘 Cliquez sur 'LANCER LE CALCUL AUTOMATIQUE' pour générer les résultats")
+
+
+def build_excel_complete_with_stats(df_results, df_stats, df_abc):
+    """Crée un fichier Excel complet avec toutes les feuilles de calcul"""
+    wb = Workbook()
+    
+    thin = Side(style="thin", color="BFBFBF")
+    brd = Border(left=thin, right=thin, top=thin, bottom=thin)
+    
+    def hdr(cell, val, bg):
+        cell.value = val
+        cell.font = Font(bold=True, size=9, name="Arial")
+        cell.fill = PatternFill("solid", start_color=bg)
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = brd
+    
+    # Feuille 1: Résultats finaux
+    ws1 = wb.active
+    ws1.title = "Résultats calculs"
+    
+    hdrs = ["Code article", "Article", "Source", "Délai (jours)", "Unité",
+            "Conso moyenne/mois", "Écart-type", "Classe ABC", "Niveau service", "Z",
+            "EOQ", "Stock sécurité", "Point commande", "Coût SS (annuel)", "Nb commandes/an"]
+    
+    for col, label in enumerate(hdrs, 1):
+        hdr(ws1.cell(1, col), label, COLORS["primary"])
+    
+    for i, row in df_results.iterrows():
+        r = i + 2
+        vals = [row.get(c, "") for c in hdrs]
+        for col, val in enumerate(vals, 1):
+            cell = ws1.cell(r, col)
+            cell.value = val
+            cell.border = brd
+    
+    for col, w in enumerate([15, 25, 10, 10, 8, 15, 12, 12, 15, 8, 10, 12, 12, 15, 12], 1):
+        ws1.column_dimensions[get_column_letter(col)].width = w
+    
+    # Feuille 2: Statistiques consommations
+    ws2 = wb.create_sheet("Statistiques conso")
+    
+    stats_hdrs = ["Code article", "Conso moyenne/mois", "Écart-type mensuel", "Nb observations", "CV (%)"]
+    for col, label in enumerate(stats_hdrs, 1):
+        hdr(ws2.cell(1, col), label, COLORS["secondary"])
+    
+    for i, row in df_stats.iterrows():
+        r = i + 2
+        for col, col_name in enumerate(stats_hdrs, 1):
+            ws2.cell(r, col, row.get(col_name, ""))
+            ws2.cell(r, col).border = brd
+    
+    for col, w in enumerate([15, 18, 15, 12, 10], 1):
+        ws2.column_dimensions[get_column_letter(col)].width = w
+    
+    # Feuille 3: Analyse ABC
+    ws3 = wb.create_sheet("Analyse ABC")
+    
+    abc_hdrs = ["Code article", "Article", "CA annuel", "CA cumulé %", "Classe ABC", "Niveau service"]
+    for col, label in enumerate(abc_hdrs, 1):
+        hdr(ws3.cell(1, col), label, COLORS["accent"])
+    
+    for i, row in df_abc.iterrows():
+        r = i + 2
+        vals = [row.get("Code article", ""), row.get("Article", ""),
+                row.get("CA annuel", 0), row.get("CA cumulé %", 0),
+                row.get("Classe ABC", ""), row.get("Niveau service", "")]
+        for col, val in enumerate(vals, 1):
+            ws3.cell(r, col, val)
+            ws3.cell(r, col).border = brd
+    
+    for col, w in enumerate([15, 25, 15, 12, 15, 15], 1):
+        ws3.column_dimensions[get_column_letter(col)].width = w
+    
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf
  
 # ─────────────────────────────────────────────────────────────────────────────
 def calculateurs():
