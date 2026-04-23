@@ -406,7 +406,7 @@ def import_calcul():
 def calculateurs():
     st.markdown("## ⚙️ Calculateurs Supply Chain")
     tab_ss, tab_eoq, tab_kpi, tab_rp = st.tabs(
-        ["📦 Stock de sécurité", "📐 EOQ (Wilson)", "📊 KPIs stock", "🔄 Point de réappro."])
+        ["📦 Stock de sécurité", "📐 EOQ (Wilson)",  "🔄 Point de réappro."])
  
     with tab_ss:
         st.markdown(fbox("Formule","SS = Z × √(LT×σD² + D²×σLT²)",
@@ -545,37 +545,6 @@ def calculateurs():
             xaxis=dict(title="Quantité (u)", gridcolor="rgba(255,255,255,.05)"),
             yaxis=dict(title="Coût/an (TND)",gridcolor="rgba(255,255,255,.05)"))
         st.plotly_chart(fig, use_container_width=True)
- 
-    with tab_kpi:
-        c1,c2 = st.columns(2)
-        with c1:
-            ks   = st.number_input("Stock moyen (u)",         value=3000,    step=100)
-            kv   = st.number_input("Ventes annuelles (u)",    value=18000,   step=100)
-            kval = st.number_input("Valeur stock (TND)",      value=240000,  step=1000)
-            kca  = st.number_input("CA annuel (TND)",         value=2400000, step=10000)
-        with c2:
-            kot  = st.number_input("Livrées à temps",         value=465,     step=1)
-            kto  = st.number_input("Total livrées",           value=490,     step=1)
-            klc  = st.number_input("Coût logistique (TND)",   value=168000,  step=1000)
-            ksh  = st.number_input("Taux stockage (%)",       value=22.0,    step=1.0)
-        rot = kv/ks if ks>0 else 0
-        cov = (ks/kv)*365 if kv>0 else 0
-        srv = (kot/kto)*100 if kto>0 else 0
-        crt = (klc/kca)*100 if kca>0 else 0
-        st.markdown("---")
-        c = st.columns(3)
-        kdata = [
-            ("Rotation",         fmt(rot,1)+"×",          "/an · >6×=excellent",  "#22c55e" if rot>=6 else "#f59e0b"),
-            ("Couverture",       fmtInt(cov)+"j",         "15–30j=optimal",        "#8892a4"),
-            ("Taux service OTD", fmt(srv,1)+"%",           ">95%=cible",           "#22c55e" if srv>=95 else "#f59e0b"),
-            ("Coût log/CA",      fmt(crt,1)+"%",           "objectif <8%",          "#22c55e" if crt<8 else "#ef4444"),
-            ("Coût stockage/an", fmtInt(kval*(ksh/100)),  "TND",                   "#f59e0b"),
-            ("DSI",              fmt(ks/(kv/365),0)+"j",  "jours de stock",        "#8892a4"),
-        ]
-        for i,(l,v,u,col) in enumerate(kdata):
-            with c[i%3]:
-                st.markdown(mcard(l,v,u,color=col), unsafe_allow_html=True)
-                st.markdown("<div style='margin-bottom:10px'></div>", unsafe_allow_html=True)
  
     with tab_rp:
         st.markdown(fbox("Formule","PR = (Dmoy × LT) + SS",
