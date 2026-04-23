@@ -545,7 +545,7 @@ def calculateurs():
             xaxis=dict(title="Quantité (u)", gridcolor="rgba(255,255,255,.05)"),
             yaxis=dict(title="Coût/an (TND)",gridcolor="rgba(255,255,255,.05)"))
         st.plotly_chart(fig, use_container_width=True)
-      with tab_kpi:
+    with tab_kpi:
         c1,c2 = st.columns(2)
         with c1:
             ks   = st.number_input("Stock moyen (u)",         value=3000,    step=100)
