@@ -194,7 +194,7 @@ def import_calcul():
     st.markdown(f"""
     <div class='medoil-card'>
         <h2>📥 Import & Calcul Automatique</h2>
-        <p>Importez vos fichiers - Les calculs sont entièrement automatisés</p>
+        <p>Importez vos fichiers - Les calculs sont entièrement automatisés et visualisables étape par étape</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -211,7 +211,7 @@ def import_calcul():
     # 1. TABLEAU DES CONSOMMATIONS (M1 à M12)
     # ============================================================
     st.markdown("### 📊 1. Tableau des consommations mensuelles")
-    st.caption("Importez un fichier avec les consommations des 12 derniers mois pour calculer automatiquement la moyenne et l'écart-type")
+    st.caption("Importez un fichier avec les consommations des 12 derniers mois")
     
     with st.expander("📋 Format attendu - Consommations mensuelles", expanded=False):
         st.markdown("""
@@ -219,18 +219,7 @@ def import_calcul():
 |---|---|---|
 | `Code article` | ✅ | Identifiant unique du produit |
 | `Article` | ✅ | Désignation du produit |
-| `M1` | ✅ | Consommation mois 1 |
-| `M2` | ✅ | Consommation mois 2 |
-| `M3` | ✅ | Consommation mois 3 |
-| `M4` | ✅ | Consommation mois 4 |
-| `M5` | ✅ | Consommation mois 5 |
-| `M6` | ✅ | Consommation mois 6 |
-| `M7` | ✅ | Consommation mois 7 |
-| `M8` | ✅ | Consommation mois 8 |
-| `M9` | ✅ | Consommation mois 9 |
-| `M10` | ✅ | Consommation mois 10 |
-| `M11` | ✅ | Consommation mois 11 |
-| `M12` | ✅ | Consommation mois 12 |
+| `M1` à `M12` | ✅ | Consommation de chaque mois |
         """)
     
     uploaded_conso = st.file_uploader(
@@ -249,10 +238,10 @@ def import_calcul():
         st.markdown("""
 | Colonne | Obligatoire | Description |
 |---|---|---|
-| `Code article` | ✅ | Identifiant unique (doit correspondre au tableau consommations) |
+| `Code article` | ✅ | Identifiant unique |
 | `Article` | ✅ | Désignation du produit |
-| `Source` | ✅ | Export / Local / BM (définit le délai automatiquement) |
-| `Unité` | — | Unité de mesure (kg, L, u, etc.) |
+| `Source` | ✅ | Export / Local / BM |
+| `Unité` | — | Unité de mesure |
 | `Coût unitaire` | ✅ | Coût d'achat unitaire (TND) |
 | `Coût passation` | ✅ | Coût par commande (TND) |
 | `Taux stockage (%)` | ✅ | Taux de détention du stock (%) |
@@ -274,23 +263,38 @@ def import_calcul():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if st.button("🚀 LANCER LE CALCUL AUTOMATIQUE", type="primary", disabled=calcul_disabled, use_container_width=True):
-            process_calcul_auto(uploaded_conso, uploaded_produits, SOURCE_DELAYS)
+            process_calcul_auto_verbose(uploaded_conso, uploaded_produits, SOURCE_DELAYS)
     
     if calcul_disabled:
         st.info("📂 Veuillez importer les deux fichiers Excel pour lancer le calcul automatique")
 
 
-def process_calcul_auto(uploaded_conso, uploaded_produits, SOURCE_DELAYS):
-    """Fonction principale de traitement des calculs"""
+def process_calcul_auto_verbose(uploaded_conso, uploaded_produits, SOURCE_DELAYS):
+    """Fonction principale de traitement des calculs avec affichage étape par étape"""
+    
+    # Conteneur pour afficher la progression
+    progress_container = st.container()
+    
+    with progress_container:
+        st.markdown("---")
+        st.markdown("## 🔄 Déroulement des calculs")
+        st.markdown("---")
     
     try:
         # ============================================================
-        # CHARGEMENT ET TRAITEMENT DES CONSOMMATIONS
+        # ÉTAPE 1: CHARGEMENT DES CONSOMMATIONS
         # ============================================================
+        with progress_container:
+            st.markdown("### 📥 ÉTAPE 1: Chargement des consommations")
+        
         df_conso = pd.read_excel(uploaded_conso)
         df_conso.columns = [str(c).strip() for c in df_conso.columns]
         
-        # Identification des colonnes de consommation (M1 à M12 ou similaires)
+        with progress_container:
+            st.write(f"✅ Fichier chargé: {len(df_conso)} lignes")
+            st.write(f"📋 Colonnes trouvées: {', '.join(df_conso.columns.tolist())}")
+        
+        # Identification des colonnes de consommation
         conso_cols = []
         for col in df_conso.columns:
             col_upper = col.upper()
@@ -299,18 +303,19 @@ def process_calcul_auto(uploaded_conso, uploaded_produits, SOURCE_DELAYS):
             elif 'CONSO' in col_upper and any(str(i) in col_upper for i in range(1, 13)):
                 conso_cols.append(col)
         
+        # Chercher des colonnes numériques
         if len(conso_cols) == 0:
-            # Chercher des colonnes numériques qui pourraient être des consommations
             for col in df_conso.columns:
                 if col.upper() not in ['CODE ARTICLE', 'CODE', 'ARTICLE', 'DESCRIPTION', 'PRODUIT']:
                     if df_conso[col].dtype in ['float64', 'int64']:
                         conso_cols.append(col)
         
-        if len(conso_cols) < 3:
-            st.error(f"⚠️ Colonnes de consommation insuffisantes. Trouvées: {conso_cols}. Attendu: M1 à M12 ou colonnes numériques")
-            return
+        with progress_container:
+            st.write(f"📊 Colonnes de consommation identifiées: {len(conso_cols)} mois")
+            if len(conso_cols) > 0:
+                st.write(f"   → {', '.join(conso_cols[:6])}{'...' if len(conso_cols) > 6 else ''}")
         
-        # Mapping des colonnes
+        # Identification des colonnes clés
         code_col = None
         article_col = None
         
@@ -323,36 +328,59 @@ def process_calcul_auto(uploaded_conso, uploaded_produits, SOURCE_DELAYS):
             elif 'article' in col_lower or 'designation' in col_lower or 'description' in col_lower:
                 article_col = col
         
-        if code_col is None:
-            st.error("❌ Colonne 'Code article' introuvable dans le fichier des consommations")
-            return
+        with progress_container:
+            if code_col:
+                st.write(f"🔑 Colonne 'Code article' identifiée: **{code_col}**")
+            else:
+                st.error("❌ Colonne 'Code article' non trouvée")
+                return
+            
+            if article_col:
+                st.write(f"📝 Colonne 'Article' identifiée: **{article_col}**")
+            else:
+                st.warning("⚠️ Colonne 'Article' non trouvée, utilisation du code comme nom")
         
-        # Calcul des statistiques par produit
+        # ============================================================
+        # ÉTAPE 2: CALCUL DES STATISTIQUES PAR PRODUIT
+        # ============================================================
+        with progress_container:
+            st.markdown("---")
+            st.markdown("### 📈 ÉTAPE 2: Calcul des statistiques de consommation")
+        
         stats_produits = []
+        details_conso = []
         
-        for _, row in df_conso.iterrows():
+        for idx, row in df_conso.iterrows():
             code = str(row[code_col]).strip()
             article = str(row[article_col]).strip() if article_col else code
             
             # Extraire les consommations
             consommations = []
+            conso_details = {}
+            
             for col in conso_cols:
                 val = clean_num(row[col])
                 if val > 0:
                     consommations.append(val)
+                    conso_details[col] = val
+                else:
+                    conso_details[col] = 0
             
             if len(consommations) >= 2:
                 moyenne_mensuelle = np.mean(consommations)
                 ecart_type = np.std(consommations, ddof=1) if len(consommations) > 1 else moyenne_mensuelle * 0.15
                 cv = (ecart_type / moyenne_mensuelle * 100) if moyenne_mensuelle > 0 else 15
+                nb_mois_valides = len(consommations)
             elif len(consommations) == 1:
                 moyenne_mensuelle = consommations[0]
                 ecart_type = moyenne_mensuelle * 0.15
                 cv = 15
+                nb_mois_valides = 1
             else:
                 moyenne_mensuelle = 0
                 ecart_type = 0
                 cv = 0
+                nb_mois_valides = 0
             
             stats_produits.append({
                 "Code article": code,
@@ -360,21 +388,46 @@ def process_calcul_auto(uploaded_conso, uploaded_produits, SOURCE_DELAYS):
                 "Conso moyenne/mois": round(moyenne_mensuelle, 2),
                 "Écart-type mensuel": round(ecart_type, 2),
                 "CV (%)": round(cv, 1),
-                "Nb mois": len(consommations),
-                "Consommations": consommations
+                "Nb mois": nb_mois_valides,
+                "Consommations_details": conso_details
             })
         
         df_stats = pd.DataFrame(stats_produits)
         
-        st.success(f"✅ {len(df_stats)} produits chargés depuis le fichier des consommations")
+        with progress_container:
+            st.write(f"✅ Statistiques calculées pour {len(df_stats)} produits")
+            
+            # Affichage détaillé des statistiques
+            st.markdown("**📊 Détail des consommations par produit:**")
+            
+            # Créer un DataFrame pour l'affichage des détails
+            df_display_stats = df_stats[["Code article", "Article", "Conso moyenne/mois", "Écart-type mensuel", "CV (%)", "Nb mois"]].copy()
+            st.dataframe(
+                df_display_stats,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Conso moyenne/mois": st.column_config.NumberColumn("Conso moyenne/mois", format="%.1f"),
+                    "Écart-type mensuel": st.column_config.NumberColumn("Écart-type", format="%.1f"),
+                    "CV (%)": st.column_config.NumberColumn("CV (%)", format="%.1f%%"),
+                }
+            )
         
         # ============================================================
-        # CHARGEMENT DES PRODUITS ET PARAMÈTRES
+        # ÉTAPE 3: CHARGEMENT DES PRODUITS ET PARAMÈTRES
         # ============================================================
+        with progress_container:
+            st.markdown("---")
+            st.markdown("### 📥 ÉTAPE 3: Chargement des paramètres produits")
+        
         df_produits = pd.read_excel(uploaded_produits)
         df_produits.columns = [str(c).strip() for c in df_produits.columns]
         
-        # Mapping des colonnes produits
+        with progress_container:
+            st.write(f"✅ Fichier chargé: {len(df_produits)} lignes")
+            st.write(f"📋 Colonnes trouvées: {', '.join(df_produits.columns.tolist())}")
+        
+        # Mapping des colonnes
         code_col_prod = None
         article_col_prod = None
         source_col = None
@@ -407,6 +460,20 @@ def process_calcul_auto(uploaded_conso, uploaded_produits, SOURCE_DELAYS):
             elif 'stockage' in col_lower:
                 taux_stockage_col = col
         
+        with progress_container:
+            st.markdown("**🔍 Colonnes identifiées:**")
+            col_status = []
+            col_status.append(("Code article", "✅" if code_col_prod else "❌"))
+            col_status.append(("Article", "✅" if article_col_prod else "⚠️"))
+            col_status.append(("Source", "✅" if source_col else "❌"))
+            col_status.append(("Unité", "✅" if unite_col else "⚠️"))
+            col_status.append(("Coût unitaire", "✅" if cout_unitaire_col else "❌"))
+            col_status.append(("Coût passation", "✅" if cout_passation_col else "❌"))
+            col_status.append(("Taux stockage (%)", "✅" if taux_stockage_col else "❌"))
+            
+            for name, status in col_status:
+                st.write(f"   {status} {name}")
+        
         # Vérification des colonnes obligatoires
         missing_cols = []
         if code_col_prod is None:
@@ -421,25 +488,34 @@ def process_calcul_auto(uploaded_conso, uploaded_produits, SOURCE_DELAYS):
             missing_cols.append("Source")
         
         if missing_cols:
-            st.error(f"❌ Colonnes obligatoires manquantes dans le fichier produits: {', '.join(missing_cols)}")
-            st.info("Veuillez ajouter ces colonnes avec les bonnes intitulés")
+            with progress_container:
+                st.error(f"❌ Colonnes obligatoires manquantes: {', '.join(missing_cols)}")
             return
         
-        # Nettoyage des données
+        # Nettoyage
         df_produits[code_col_prod] = df_produits[code_col_prod].astype(str).str.strip()
         df_produits[cout_unitaire_col] = df_produits[cout_unitaire_col].apply(clean_num)
         df_produits[cout_passation_col] = df_produits[cout_passation_col].apply(clean_num)
         df_produits[taux_stockage_col] = df_produits[taux_stockage_col].apply(clean_num)
         
-        # Valeur par défaut pour la source
         if source_col:
             df_produits[source_col] = df_produits[source_col].fillna("Local")
         
-        st.success(f"✅ {len(df_produits)} produits chargés depuis le fichier des paramètres")
+        # Affichage des données produits
+        with progress_container:
+            st.markdown("**📦 Données produits chargées:**")
+            df_display_produits = df_produits[[code_col_prod, article_col_prod if article_col_prod else code_col_prod, 
+                                               source_col, cout_unitaire_col, cout_passation_col, taux_stockage_col]].copy()
+            df_display_produits.columns = ["Code article", "Article", "Source", "Coût unitaire", "Coût passation", "Taux stockage (%)"]
+            st.dataframe(df_display_produits, use_container_width=True, hide_index=True)
         
         # ============================================================
-        # FUSION DES DONNÉES
+        # ÉTAPE 4: FUSION DES DONNÉES
         # ============================================================
+        with progress_container:
+            st.markdown("---")
+            st.markdown("### 🔗 ÉTAPE 4: Fusion des données")
+        
         df_merged = df_stats.merge(
             df_produits[[code_col_prod, article_col_prod, source_col, unite_col, 
                          cout_unitaire_col, cout_passation_col, taux_stockage_col]],
@@ -448,13 +524,19 @@ def process_calcul_auto(uploaded_conso, uploaded_produits, SOURCE_DELAYS):
             how="inner"
         )
         
-        if len(df_merged) == 0:
-            st.error("❌ Aucun produit en commun entre les deux fichiers. Vérifiez les codes article.")
-            return
+        with progress_container:
+            st.write(f"✅ {len(df_merged)} produits appariés avec succès")
+            
+            # Afficher les produits non appariés s'il y en a
+            non_apparies_stats = set(df_stats["Code article"]) - set(df_merged["Code article"])
+            non_apparies_prod = set(df_produits[code_col_prod]) - set(df_merged["Code article"])
+            
+            if non_apparies_stats:
+                st.warning(f"⚠️ {len(non_apparies_stats)} produit(s) dans consommations sans correspondance dans produits: {', '.join(list(non_apparies_stats)[:5])}")
+            if non_apparies_prod:
+                st.warning(f"⚠️ {len(non_apparies_prod)} produit(s) dans produits sans correspondance dans consommations: {', '.join(list(non_apparies_prod)[:5])}")
         
-        st.success(f"✅ {len(df_merged)} produits appariés avec succès")
-        
-        # Renommage pour faciliter l'utilisation
+        # Renommage
         df_merged = df_merged.rename(columns={
             cout_unitaire_col: "Coût unitaire",
             cout_passation_col: "Coût passation",
@@ -465,14 +547,16 @@ def process_calcul_auto(uploaded_conso, uploaded_produits, SOURCE_DELAYS):
         
         if article_col_prod:
             df_merged["Article"] = df_merged[article_col_prod]
-        elif article_col:
-            df_merged["Article"] = df_merged["Article"]
         else:
-            df_merged["Article"] = df_merged["Code article"]
+            df_merged["Article"] = df_merged["Article"]
         
         # ============================================================
-        # ANALYSE ABC (basée sur le CA)
+        # ÉTAPE 5: ANALYSE ABC
         # ============================================================
+        with progress_container:
+            st.markdown("---")
+            st.markdown("### 🏷️ ÉTAPE 5: Analyse ABC")
+        
         df_merged["CA mensuel"] = df_merged["Conso moyenne/mois"] * df_merged["Coût unitaire"]
         df_merged["CA annuel"] = df_merged["CA mensuel"] * 12
         
@@ -480,23 +564,66 @@ def process_calcul_auto(uploaded_conso, uploaded_produits, SOURCE_DELAYS):
         df_abc["CA cumulé"] = df_abc["CA annuel"].cumsum()
         df_abc["CA cumulé %"] = df_abc["CA cumulé"] / df_abc["CA annuel"].sum() * 100
         
+        with progress_container:
+            st.write(f"💰 CA total analysé: **{fmtInt(df_abc['CA annuel'].sum())} TND**")
+        
         def assign_abc(row):
             if row["CA cumulé %"] <= 70:
-                return "A (70% CA)", 2.33  # Z = 99%
+                return "A (70% CA)", 2.33, "99%"
             elif row["CA cumulé %"] <= 90:
-                return "B (20% CA)", 1.65  # Z = 95%
+                return "B (20% CA)", 1.65, "95%"
             else:
-                return "C (10% CA)", 1.28  # Z = 90%
+                return "C (10% CA)", 1.28, "90%"
         
-        df_abc[["Classe ABC", "Z"]] = df_abc.apply(lambda r: pd.Series(assign_abc(r)), axis=1)
+        df_abc[["Classe ABC", "Z", "Niveau service"]] = df_abc.apply(lambda r: pd.Series(assign_abc(r)), axis=1)
+        
+        # Affichage de l'analyse ABC
+        with progress_container:
+            st.markdown("**📊 Répartition par classe ABC:**")
+            
+            abc_counts = df_abc["Classe ABC"].value_counts()
+            col1, col2, col3 = st.columns(3)
+            
+            for classe in ["A (70% CA)", "B (20% CA)", "C (10% CA)"]:
+                count = abc_counts.get(classe, 0)
+                pct = (count / len(df_abc) * 100) if len(df_abc) > 0 else 0
+                color = COLORS["danger"] if "A" in classe else COLORS["warning"] if "B" in classe else COLORS["success"]
+                
+                target_col = col1 if "A" in classe else col2 if "B" in classe else col3
+                with target_col:
+                    st.markdown(f"""
+                    <div style='background:{color}10; border-left:3px solid {color}; padding:0.5rem 1rem; border-radius:8px; margin-bottom:0.5rem'>
+                        <strong>{classe}</strong><br/>
+                        {count} produits ({pct:.1f}%)
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            # Tableau détaillé ABC
+            st.markdown("**📋 Détail de l'analyse ABC:**")
+            df_display_abc = df_abc[["Code article", "Article", "CA annuel", "CA cumulé %", "Classe ABC", "Niveau service"]].copy()
+            st.dataframe(
+                df_display_abc,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "CA annuel": st.column_config.NumberColumn("CA annuel (TND)", format="%.0f"),
+                    "CA cumulé %": st.column_config.NumberColumn("CA cumulé %", format="%.1f%%"),
+                }
+            )
         
         # ============================================================
-        # CALCULS FINAUX
+        # ÉTAPE 6: CALCULS FINAUX (EOQ, SS, PR)
         # ============================================================
+        with progress_container:
+            st.markdown("---")
+            st.markdown("### 🧮 ÉTAPE 6: Calculs EOQ, Stock sécurité et Point de commande")
+        
         results = []
+        calcul_details = []
         
-        for _, row in df_abc.iterrows():
+        for idx, row in df_abc.iterrows():
             code = row["Code article"]
+            article = row["Article"]
             conso_mensuelle = row["Conso moyenne/mois"]
             conso_annuelle = conso_mensuelle * 12
             cout_unitaire = row["Coût unitaire"]
@@ -511,23 +638,42 @@ def process_calcul_auto(uploaded_conso, uploaded_produits, SOURCE_DELAYS):
             lt_mois = delay["mois"]
             lt_jours = delay["jours"]
             
+            # Variabilité
+            variabilite = (ecart_type / conso_mensuelle) if conso_mensuelle > 0 else 0.15
+            
+            # Stockage des détails de calcul
+            detail = {
+                "Code article": code,
+                "Article": article,
+                "Source": source,
+                "Délai (jours)": lt_jours,
+                "Conso mensuelle": conso_mensuelle,
+                "Écart-type": ecart_type,
+                "Variabilité": round(variabilite * 100, 1),
+                "Z (niveau service)": z,
+                "Coût unitaire": cout_unitaire,
+                "Coût passation": cout_passation,
+                "Taux stockage (%)": taux_stockage
+            }
+            
             if conso_mensuelle > 0 and cout_unitaire > 0:
-                # Calcul de la variabilité
-                variabilite = (ecart_type / conso_mensuelle) if conso_mensuelle > 0 else 0.15
-                
                 # Stock de sécurité
                 ss = calc_ss(conso_mensuelle, z=z, lt_mois=lt_mois, variab=variabilite)
+                detail["SS calcul"] = f"SS = {z} × √({lt_mois*30} × {ecart_type}² + {conso_mensuelle/30}² × {lt_mois*30*0.05}²) = {ss}"
                 
-                # Quantité économique (EOQ)
+                # EOQ
                 eoq, nb_cmd, ct_min = calc_eoq(conso_annuelle, cout_unitaire, cout_passation, taux_stockage/100)
+                h = (taux_stockage/100) * cout_unitaire
+                detail["EOQ calcul"] = f"EOQ = √(2 × {fmtInt(conso_annuelle)} × {cout_passation:.0f} / {h:.2f}) = {eoq}"
                 
                 # Point de commande
                 pr = calc_pr(conso_mensuelle, lt_mois, ss)
+                detail["PR calcul"] = f"PR = ({conso_mensuelle/30:.1f} × {lt_jours}) + {ss} = {pr}"
                 
-                # Coût annuel du stock de sécurité
+                # Coût SS
                 cout_ss = round(ss * cout_unitaire * (taux_stockage/100), 2)
                 
-                # Stock de sécurité en jours de couverture
+                # Jours de couverture SS
                 conso_journaliere = conso_mensuelle / 30
                 ss_jours = round(ss / conso_journaliere, 1) if conso_journaliere > 0 else 0
             else:
@@ -537,10 +683,22 @@ def process_calcul_auto(uploaded_conso, uploaded_produits, SOURCE_DELAYS):
                 cout_ss = 0
                 nb_cmd = 0
                 ss_jours = 0
+                detail["SS calcul"] = "Données insuffisantes (consommation ou coût unitaire nul)"
+                detail["EOQ calcul"] = "Données insuffisantes"
+                detail["PR calcul"] = "Données insuffisantes"
+            
+            detail["SS final"] = ss
+            detail["EOQ final"] = eoq
+            detail["PR final"] = pr
+            detail["Coût SS annuel"] = cout_ss
+            detail["SS jours couverture"] = ss_jours
+            detail["Nb commandes/an"] = round(nb_cmd, 1) if nb_cmd else 0
+            
+            calcul_details.append(detail)
             
             results.append({
                 "Code article": code,
-                "Article": row.get("Article", ""),
+                "Article": article,
                 "Source": source,
                 "Délai (jours)": lt_jours,
                 "Unité": row.get("Unité", ""),
@@ -552,6 +710,7 @@ def process_calcul_auto(uploaded_conso, uploaded_produits, SOURCE_DELAYS):
                 "Taux stockage (%)": taux_stockage,
                 "Classe ABC": row["Classe ABC"],
                 "Z (niveau service)": z,
+                "Niveau service": row["Niveau service"],
                 "CA annuel (TND)": round(row["CA annuel"], 0),
                 "EOQ": eoq,
                 "Stock sécurité (u)": ss,
@@ -562,22 +721,70 @@ def process_calcul_auto(uploaded_conso, uploaded_produits, SOURCE_DELAYS):
             })
         
         df_results = pd.DataFrame(results)
+        df_details = pd.DataFrame(calcul_details)
+        
+        with progress_container:
+            st.write("✅ Calculs terminés pour tous les produits")
         
         # ============================================================
-        # AFFICHAGE DES RÉSULTATS
+        # AFFICHAGE DES DÉTAILS DE CALCUL PAR PRODUIT
         # ============================================================
+        with progress_container:
+            st.markdown("---")
+            st.markdown("### 🔍 Détail des calculs par produit")
+            st.caption("Cliquez sur un produit pour voir le détail des formules appliquées")
+            
+            # Sélecteur de produit
+            produit_selectionne = st.selectbox(
+                "Sélectionnez un produit pour voir les détails de calcul:",
+                options=df_details["Code article"].tolist(),
+                format_func=lambda x: f"{x} - {df_details[df_details['Code article']==x]['Article'].iloc[0]}"
+            )
+            
+            if produit_selectionne:
+                detail_produit = df_details[df_details["Code article"] == produit_selectionne].iloc[0]
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown(f"""
+                    <div style='background:#F0F9FF; padding:1rem; border-radius:12px; margin-bottom:1rem'>
+                        <strong>📊 Données d'entrée</strong><br/>
+                        • Source: {detail_produit['Source']} → Délai: {detail_produit['Délai (jours)']} jours<br/>
+                        • Consommation moyenne: {detail_produit['Conso mensuelle']:.1f} u/mois<br/>
+                        • Écart-type: {detail_produit['Écart-type']:.1f} u<br/>
+                        • Variabilité: {detail_produit['Variabilité']}%<br/>
+                        • Z (niveau service): {detail_produit['Z (niveau service)']}<br/>
+                        • Coût unitaire: {detail_produit['Coût unitaire']:.2f} TND<br/>
+                        • Coût passation: {detail_produit['Coût passation']:.0f} TND<br/>
+                        • Taux stockage: {detail_produit['Taux stockage (%)']}%
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with col2:
+                    st.markdown(f"""
+                    <div style='background:#F0FDF4; padding:1rem; border-radius:12px; margin-bottom:1rem'>
+                        <strong>🧮 Résultats des calculs</strong><br/>
+                        • <strong>Stock sécurité:</strong> {detail_produit['SS final']} u<br/>
+                        &nbsp;&nbsp;<span style='font-size:0.8rem'>→ {detail_produit['SS calcul']}</span><br/>
+                        • <strong>EOQ:</strong> {detail_produit['EOQ final']} u<br/>
+                        &nbsp;&nbsp;<span style='font-size:0.8rem'>→ {detail_produit['EOQ calcul']}</span><br/>
+                        • <strong>Point commande:</strong> {detail_produit['PR final']} u<br/>
+                        &nbsp;&nbsp;<span style='font-size:0.8rem'>→ {detail_produit['PR calcul']}</span><br/>
+                        • <strong>Coût SS annuel:</strong> {detail_produit['Coût SS annuel']:.2f} TND
+                    </div>
+                    """, unsafe_allow_html=True)
         
-        # Aperçu des consommations chargées
-        with st.expander("👁️ Aperçu des consommations chargées", expanded=False):
-            st.dataframe(df_stats[["Code article", "Article", "Conso moyenne/mois", "Écart-type mensuel", "CV (%)", "Nb mois"]], 
-                        use_container_width=True, hide_index=True)
-        
-        st.markdown("---")
-        st.markdown("#### 📊 Résultats des calculs")
+        # ============================================================
+        # ÉTAPE 7: RÉSULTATS FINAUX
+        # ============================================================
+        with progress_container:
+            st.markdown("---")
+            st.markdown("### 📊 ÉTAPE 7: Résultats finaux")
         
         # Tableau principal
         display_cols = ["Code article", "Article", "Source", "Délai (jours)", "Unité",
-                       "Conso moyenne/mois", "Classe ABC", "Z (niveau service)",
+                       "Conso moyenne/mois", "Classe ABC", "Niveau service",
                        "EOQ", "Stock sécurité (u)", "SS (jours couverture)", 
                        "Point commande (u)", "Coût SS annuel (TND)", "Nb commandes/an"]
         
@@ -587,10 +794,6 @@ def process_calcul_auto(uploaded_conso, uploaded_produits, SOURCE_DELAYS):
             hide_index=True,
             column_config={
                 "Conso moyenne/mois": st.column_config.NumberColumn("Conso moyenne/mois", format="%.1f"),
-                "Coût unitaire": st.column_config.NumberColumn("Coût unitaire (TND)", format="%.2f"),
-                "Coût passation": st.column_config.NumberColumn("Coût passation (TND)", format="%.0f"),
-                "Taux stockage (%)": st.column_config.NumberColumn("Taux stockage (%)", format="%.1f%%"),
-                "CA annuel (TND)": st.column_config.NumberColumn("CA annuel (TND)", format="%.0f"),
                 "EOQ": st.column_config.NumberColumn("EOQ", format="%d"),
                 "Stock sécurité (u)": st.column_config.NumberColumn("Stock sécurité", format="%d"),
                 "Point commande (u)": st.column_config.NumberColumn("Point commande", format="%d"),
@@ -602,7 +805,7 @@ def process_calcul_auto(uploaded_conso, uploaded_produits, SOURCE_DELAYS):
         # INDICATEURS SYNTHÉTIQUES
         # ============================================================
         st.markdown("---")
-        st.markdown("#### 📈 Synthèse des résultats")
+        st.markdown("### 📈 Synthèse des résultats")
         
         col1, col2, col3, col4 = st.columns(4)
         
@@ -642,113 +845,10 @@ def process_calcul_auto(uploaded_conso, uploaded_produits, SOURCE_DELAYS):
             """, unsafe_allow_html=True)
         
         # ============================================================
-        # GRAPHIQUES
-        # ============================================================
-        st.markdown("---")
-        st.markdown("#### 📊 Visualisation des indicateurs")
-        
-        tab1, tab2, tab3 = st.tabs(["📊 EOQ / SS / PR", "🏷️ Analyse ABC", "📈 Évolution CV"])
-        
-        with tab1:
-            fig = go.Figure()
-            
-            fig.add_trace(go.Bar(
-                name="EOQ",
-                x=df_results["Code article"].astype(str),
-                y=df_results["EOQ"],
-                marker_color=COLORS["primary"],
-                text=df_results["EOQ"].apply(lambda v: f"{int(v):,}" if v > 0 else ""),
-                textposition="outside"
-            ))
-            
-            fig.add_trace(go.Bar(
-                name="Stock Sécurité",
-                x=df_results["Code article"].astype(str),
-                y=df_results["Stock sécurité (u)"],
-                marker_color=COLORS["secondary"],
-                text=df_results["Stock sécurité (u)"].apply(lambda v: f"{int(v):,}"),
-                textposition="outside"
-            ))
-            
-            fig.add_trace(go.Scatter(
-                name="Point commande",
-                x=df_results["Code article"].astype(str),
-                y=df_results["Point commande (u)"],
-                mode="markers+lines",
-                marker=dict(color=COLORS["danger"], size=9, symbol="diamond"),
-                line=dict(color=COLORS["danger"], width=2, dash="dash")
-            ))
-            
-            fig.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                height=450,
-                barmode="group",
-                xaxis=dict(title="Article", tickangle=-45),
-                yaxis=dict(title="Unités")
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        
-        with tab2:
-            # Graphique Pareto ABC
-            fig, ax = plt.subplots(figsize=(10, 5))
-            
-            colors_abc = {"A (70% CA)": COLORS["danger"], "B (20% CA)": COLORS["warning"], "C (10% CA)": COLORS["success"]}
-            bar_colors = [colors_abc.get(classe, COLORS["gray"]) for classe in df_abc["Classe ABC"]]
-            
-            ax.bar(df_abc["Code article"].astype(str), df_abc["CA annuel"], color=bar_colors, alpha=0.7, label="CA annuel")
-            ax2 = ax.twinx()
-            ax2.plot(df_abc["Code article"].astype(str), df_abc["CA cumulé %"], color=COLORS["primary"], marker='o', linewidth=2, label="CA cumulé %")
-            ax2.axhline(y=70, color='green', linestyle='--', alpha=0.7, label="Seuil A (70%)")
-            ax2.axhline(y=90, color='orange', linestyle='--', alpha=0.7, label="Seuil B (90%)")
-            
-            ax.set_xlabel("Article")
-            ax.set_ylabel("CA annuel (TND)")
-            ax2.set_ylabel("CA cumulé (%)")
-            ax.tick_params(axis='x', rotation=45)
-            
-            # Légende
-            from matplotlib.patches import Patch
-            legend_elements = [Patch(facecolor=COLORS["danger"], label='Classe A (70% CA)'),
-                              Patch(facecolor=COLORS["warning"], label='Classe B (20% CA)'),
-                              Patch(facecolor=COLORS["success"], label='Classe C (10% CA)')]
-            ax.legend(handles=legend_elements, loc='upper left')
-            
-            st.pyplot(fig)
-            plt.close()
-        
-        with tab3:
-            # Graphique du coefficient de variation
-            fig = go.Figure()
-            
-            cv_data = df_results.sort_values("CV (%)", ascending=False)
-            colors_cv = ["#ef4444" if cv > 30 else "#f59e0b" if cv > 15 else "#22c55e" for cv in cv_data["CV (%)"]]
-            
-            fig.add_trace(go.Bar(
-                x=cv_data["Code article"].astype(str),
-                y=cv_data["CV (%)"],
-                marker_color=colors_cv,
-                text=cv_data["CV (%)"].apply(lambda v: f"{v:.1f}%"),
-                textposition="outside"
-            ))
-            
-            fig.add_hline(y=15, line_dash="dash", line_color="#f59e0b", annotation_text="Variabilité modérée (15%)")
-            fig.add_hline(y=30, line_dash="dash", line_color="#ef4444", annotation_text="Variabilité élevée (30%)")
-            
-            fig.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                height=400,
-                xaxis=dict(title="Article", tickangle=-45),
-                yaxis=dict(title="Coefficient de variation (%)", range=[0, max(50, cv_data["CV (%)"].max() + 10)])
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        
-        # ============================================================
         # EXPORT
         # ============================================================
         st.markdown("---")
-        st.markdown("#### 💾 Export des résultats")
+        st.markdown("### 💾 Export des résultats")
         
         excel_buf = build_excel_complete_calculs(df_results, df_stats, df_abc)
         
@@ -764,118 +864,14 @@ def process_calcul_auto(uploaded_conso, uploaded_produits, SOURCE_DELAYS):
         st.session_state['df_calculs'] = df_results
         st.session_state['df_stats'] = df_stats
         st.session_state['df_abc'] = df_abc
+        st.session_state['df_details'] = df_details
         
         st.success("✅ Calculs terminés avec succès !")
         
     except Exception as e:
-        st.error(f"❌ Erreur lors du calcul : {str(e)}")
-        st.exception(e)
-
-
-def build_excel_complete_calculs(df_results, df_stats, df_abc):
-    """Crée un fichier Excel complet avec toutes les feuilles"""
-    wb = Workbook()
-    
-    thin = Side(style="thin", color="BFBFBF")
-    brd = Border(left=thin, right=thin, top=thin, bottom=thin)
-    
-    def hdr(cell, val, bg):
-        cell.value = val
-        cell.font = Font(bold=True, size=9, name="Arial")
-        cell.fill = PatternFill("solid", start_color=bg)
-        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-        cell.border = brd
-    
-    # Feuille 1: Résultats finaux
-    ws1 = wb.active
-    ws1.title = "Résultats calculs"
-    
-    hdrs = list(df_results.columns)
-    for col, label in enumerate(hdrs, 1):
-        hdr(ws1.cell(1, col), label, COLORS["primary"])
-    
-    for i, row in df_results.iterrows():
-        r = i + 2
-        for col, col_name in enumerate(hdrs, 1):
-            val = row[col_name]
-            cell = ws1.cell(r, col)
-            cell.value = val
-            cell.border = brd
-            if isinstance(val, (int, float)):
-                cell.number_format = '#,##0.00'
-    
-    for col, w in enumerate([15, 30, 10, 12, 8, 15, 12, 10, 12, 12, 12, 12, 15, 12, 12, 15, 12, 12, 15, 12], 1):
-        ws1.column_dimensions[get_column_letter(col)].width = w
-    
-    # Feuille 2: Statistiques consommations
-    ws2 = wb.create_sheet("Statistiques conso")
-    
-    stats_hdrs = ["Code article", "Article", "Conso moyenne/mois", "Écart-type mensuel", "CV (%)", "Nb mois"]
-    for col, label in enumerate(stats_hdrs, 1):
-        hdr(ws2.cell(1, col), label, COLORS["secondary"])
-    
-    for i, row in df_stats.iterrows():
-        r = i + 2
-        for col, col_name in enumerate(stats_hdrs, 1):
-            ws2.cell(r, col, row.get(col_name, ""))
-            ws2.cell(r, col).border = brd
-    
-    for col, w in enumerate([15, 30, 18, 15, 10, 10], 1):
-        ws2.column_dimensions[get_column_letter(col)].width = w
-    
-    # Feuille 3: Analyse ABC
-    ws3 = wb.create_sheet("Analyse ABC")
-    
-    abc_hdrs = ["Code article", "Article", "CA mensuel", "CA annuel", "CA cumulé %", "Classe ABC", "Z"]
-    for col, label in enumerate(abc_hdrs, 1):
-        hdr(ws3.cell(1, col), label, COLORS["accent"])
-    
-    for i, row in df_abc.iterrows():
-        r = i + 2
-        vals = [row.get("Code article", ""), row.get("Article", ""),
-                row.get("CA mensuel", 0), row.get("CA annuel", 0),
-                row.get("CA cumulé %", 0), row.get("Classe ABC", ""),
-                row.get("Z", 0)]
-        for col, val in enumerate(vals, 1):
-            ws3.cell(r, col, val)
-            ws3.cell(r, col).border = brd
-    
-    for col, w in enumerate([15, 30, 15, 15, 12, 15, 10], 1):
-        ws3.column_dimensions[get_column_letter(col)].width = w
-    
-    # Feuille 4: Paramètres
-    ws4 = wb.create_sheet("Paramètres")
-    
-    params_hdrs = ["Paramètre", "Valeur", "Description"]
-    for col, label in enumerate(params_hdrs, 1):
-        hdr(ws4.cell(1, col), label, COLORS["gray"])
-    
-    params = [
-        ["Date calcul", datetime.now().strftime("%Y-%m-%d %H:%M"), ""],
-        ["Source - Export", "Délai: 4 mois (120 jours)", ""],
-        ["Source - Local", "Délai: 0.5 mois (15 jours)", ""],
-        ["Source - BM", "Délai: 0.066 mois (2 jours)", ""],
-        ["Classe A (70% CA)", "Z = 2.33 (99% service)", ""],
-        ["Classe B (20% CA)", "Z = 1.65 (95% service)", ""],
-        ["Classe C (10% CA)", "Z = 1.28 (90% service)", ""],
-    ]
-    
-    for i, (param, val, desc) in enumerate(params, 2):
-        ws4.cell(i, 1, param)
-        ws4.cell(i, 2, val)
-        ws4.cell(i, 3, desc)
-        for col in range(1, 4):
-            ws4.cell(i, col).border = brd
-    
-    ws4.column_dimensions['A'].width = 25
-    ws4.column_dimensions['B'].width = 30
-    ws4.column_dimensions['C'].width = 40
-    
-    buf = io.BytesIO()
-    wb.save(buf)
-    buf.seek(0)
-    return buf
- 
+        with progress_container:
+            st.error(f"❌ Erreur lors du calcul : {str(e)}")
+            st.exception(e)
 # ─────────────────────────────────────────────────────────────────────────────
 def calculateurs():
     st.markdown("## ⚙️ Calculateurs Supply Chain")
