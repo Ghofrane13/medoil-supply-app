@@ -801,4 +801,467 @@ def page_calculateurs():
     with tab2:
         st.markdown("""
         <div style='background:#F0F9FF; padding:1rem; border-radius:12px; margin-bottom:1rem'>
-            <strong>Formule EOQ :</strong> Q*
+            <strong>Formule EOQ :</strong> Q* = √(2 × D × S / H)
+        </div>
+        """, unsafe_allow_html=True)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            demande_annuelle = st.number_input("Demande annuelle (u)", value=12000.0, step=1000.0)
+            cout_passation = st.number_input("Coût de passation (TND)", value=150.0, step=10.0)
+        
+        with col2:
+            cout_unitaire = st.number_input("Coût unitaire (TND)", value=80.0, step=10.0, key="eoq_cu")
+            taux_stockage = st.number_input("Taux de stockage (%)", value=20.0, step=1.0)
+        
+        eoq, nb_cmd, ct_min = calc_eoq(demande_annuelle, cout_unitaire, cout_passation, taux_stockage/100)
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.markdown(f"""
+            <div class='medoil-card' style='text-align:center'>
+                <div class='metric-label'>EOQ</div>
+                <div class='metric-value'>{fmtInt(eoq)} u</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown(f"""
+            <div class='medoil-card' style='text-align:center'>
+                <div class='metric-label'>Nb commandes/an</div>
+                <div class='metric-value'>{fmt(nb_cmd, 1)}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            periodicite = 250 / nb_cmd if nb_cmd > 0 else 0
+            st.markdown(f"""
+            <div class='medoil-card' style='text-align:center'>
+                <div class='metric-label'>Périodicité</div>
+                <div class='metric-value'>{fmtInt(periodicite)} jours</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            st.markdown(f"""
+            <div class='medoil-card' style='text-align:center'>
+                <div class='metric-label'>Coût total min</div>
+                <div class='metric-value'>{fmtInt(ct_min)} TND</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Graphique de sensibilité
+        qty_range = np.linspace(max(10, eoq * 0.2), eoq * 2.5, 100)
+        cout_pass = [demande_annuelle / q * cout_passation for q in qty_range]
+        cout_stock = [q / 2 * (taux_stockage/100) * cout_unitaire for q in qty_range]
+        cout_total = [cout_pass[i] + cout_stock[i] for i in range(len(qty_range))]
+        
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=qty_range, y=cout_pass, name="Coût passation", line=dict(color=COLORS["primary"], width=2)))
+        fig.add_trace(go.Scatter(x=qty_range, y=cout_stock, name="Coût stockage", line=dict(color=COLORS["secondary"], width=2)))
+        fig.add_trace(go.Scatter(x=qty_range, y=cout_total, name="Coût total", line=dict(color=COLORS["success"], width=2.5)))
+        fig.add_vline(x=eoq, line_dash="dash", line_color=COLORS["danger"], annotation_text=f"EOQ = {fmtInt(eoq)}")
+        fig.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            height=350,
+            xaxis_title="Quantité commandée (u)",
+            yaxis_title="Coût annuel (TND)"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with tab3:
+        st.markdown("""
+        <div style='background:#F0F9FF; padding:1rem; border-radius:12px; margin-bottom:1rem'>
+            <strong>Formule :</strong> Point de commande = Demande journalière × Délai + Stock sécurité
+        </div>
+        """, unsafe_allow_html=True)
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            conso_mensuelle = st.number_input("Consommation mensuelle (u)", value=500.0, step=50.0, key="pr_conso")
+            demande_journaliere = conso_mensuelle / 30
+        
+        with col2:
+            source = st.selectbox("Source", list(SOURCE_DELAYS.keys()), key="pr_source")
+            lt_info = SOURCE_DELAYS[source]
+            delai_jours = lt_info["jours"]
+        
+        with col3:
+            ss = st.number_input("Stock de sécurité (u)", value=100.0, step=10.0, key="pr_ss")
+        
+        pr = demande_journaliere * delai_jours + ss
+        
+        st.markdown(f"""
+        <div class='medoil-card' style='text-align:center; margin-top:1rem'>
+            <div class='metric-label'>Point de commande</div>
+            <div class='metric-value'>{fmtInt(pr)} unités</div>
+            <div style='font-size:0.85rem; margin-top:0.5rem'>
+                Commander lorsque le stock atteint ce seuil
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+# ============================================================
+# PAGE 4: ALERTES
+# ============================================================
+
+def page_alertes():
+    st.markdown(f"""
+    <div class='medoil-card'>
+        <h2>🔔 Alertes & Surveillance</h2>
+        <p>Importez votre fichier de suivi pour générer les alertes de rupture et de réapprovisionnement</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Upload du fichier de suivi
+    uploaded = st.file_uploader(
+        "📂 Déposez votre fichier Excel de suivi des stocks",
+        type=["xlsx", "xls"],
+        key="alert_upload"
+    )
+    
+    # Ou utiliser les calculs de la page précédente
+    if 'df_calculs' in st.session_state and st.checkbox("Utiliser les résultats des calculs précédents"):
+        df_calculs = st.session_state['df_calculs']
+        
+        # Simuler le suivi
+        df_suivi = df_calculs[["Code article", "Description", "Stock sécurité", "Point commande"]].copy()
+        df_suivi["Stock actuel"] = df_suivi["Stock sécurité"] * np.random.uniform(0.5, 1.5, len(df_suivi))
+        df_suivi["Consommation mois"] = df_calculs["Conso mensuelle"]
+        
+        st.success(f"✅ Utilisation des {len(df_suivi)} articles depuis les calculs précédents")
+    else:
+        df_suivi = None
+    
+    if uploaded:
+        try:
+            df_raw = pd.read_excel(uploaded)
+            df_raw.columns = [str(c).strip() for c in df_raw.columns]
+            
+            # Mapping
+            cmap = {}
+            for col in df_raw.columns:
+                cl = col.lower().strip()
+                if "code" in cl and "article" in cl:
+                    cmap["Code article"] = col
+                elif "description" in cl or "designation" in cl:
+                    cmap["Description"] = col
+                elif "stock sécurité" in cl or "ss" in cl:
+                    cmap["Stock sécurité"] = col
+                elif "point commande" in cl or "pr" in cl:
+                    cmap["Point commande"] = col
+                elif "stock actuel" in cl or "stk" in cl:
+                    cmap["Stock actuel"] = col
+                elif "consommation" in cl or "cons" in cl:
+                    cmap["Consommation mois"] = col
+            
+            df_suivi = df_raw.rename(columns={v: k for k, v in cmap.items()})
+            
+            for c in ["Stock sécurité", "Point commande", "Stock actuel", "Consommation mois"]:
+                if c in df_suivi.columns:
+                    df_suivi[c] = df_suivi[c].apply(clean_num)
+            
+            st.success(f"✅ {len(df_suivi)} articles chargés")
+            
+        except Exception as e:
+            st.error(f"Erreur de lecture : {e}")
+    
+    if df_suivi is not None and len(df_suivi) > 0:
+        # Générer les alertes
+        def generate_alert(row):
+            ss = row.get("Stock sécurité", 0)
+            pr = row.get("Point commande", 0)
+            stock = row.get("Stock actuel", 0)
+            conso = row.get("Consommation mois", 0)
+            
+            if stock <= ss:
+                return "🔴 ALERTE CRITIQUE - Stock inférieur au SS", "Commander immédiatement"
+            elif stock <= pr:
+                return "🟡 ALERTE - Point de commande atteint", "Déclencher une commande"
+            else:
+                jours_restants = (stock - pr) / (conso / 30) if conso > 0 else 999
+                if jours_restants < 15:
+                    return "🟠 Attention - Stock faible", f"Commander sous {fmtInt(jours_restants)} jours"
+                return "🟢 Normal", f"Stock OK pour {fmtInt(jours_restants)} jours"
+        
+        alertes = df_suivi.apply(lambda r: generate_alert(r), axis=1)
+        df_suivi["Alerte niveau"] = [a[0] for a in alertes]
+        df_suivi["Action"] = [a[1] for a in alertes]
+        
+        # Synthèse
+        st.markdown("---")
+        st.markdown("#### 📊 Synthèse des alertes")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            n_critique = len(df_suivi[df_suivi["Alerte niveau"] == "🔴 ALERTE CRITIQUE - Stock inférieur au SS"])
+            st.markdown(f"""
+            <div class='medoil-card' style='text-align:center; border-top-color:{COLORS["danger"]}'>
+                <div class='metric-label'>🔴 Critique</div>
+                <div class='metric-value' style='color:{COLORS["danger"]}'>{n_critique}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            n_alerte = len(df_suivi[df_suivi["Alerte niveau"] == "🟡 ALERTE - Point de commande atteint"])
+            st.markdown(f"""
+            <div class='medoil-card' style='text-align:center; border-top-color:{COLORS["warning"]}'>
+                <div class='metric-label'>🟡 À commander</div>
+                <div class='metric-value' style='color:{COLORS["warning"]}'>{n_alerte}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            n_attention = len(df_suivi[df_suivi["Alerte niveau"] == "🟠 Attention - Stock faible"])
+            st.markdown(f"""
+            <div class='medoil-card' style='text-align:center; border-top-color:{COLORS["accent"]}'>
+                <div class='metric-label'>🟠 Attention</div>
+                <div class='metric-value'>{n_attention}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            n_normal = len(df_suivi[df_suivi["Alerte niveau"] == "🟢 Normal"])
+            st.markdown(f"""
+            <div class='medoil-card' style='text-align:center; border-top-color:{COLORS["success"]}'>
+                <div class='metric-label'>🟢 Normal</div>
+                <div class='metric-value'>{n_normal}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Tableau des alertes
+        st.markdown("---")
+        st.markdown("#### 📋 Détail des alertes")
+        
+        filtre = st.multiselect(
+            "Filtrer par niveau d'alerte",
+            options=df_suivi["Alerte niveau"].unique(),
+            default=["🔴 ALERTE CRITIQUE - Stock inférieur au SS", "🟡 ALERTE - Point de commande atteint", "🟠 Attention - Stock faible"]
+        )
+        
+        if filtre:
+            df_show = df_suivi[df_suivi["Alerte niveau"].isin(filtre)]
+        else:
+            df_show = df_suivi
+        
+        display_cols = ["Code article", "Description", "Stock actuel", "Stock sécurité", "Point commande", "Alerte niveau", "Action"]
+        display_cols = [c for c in display_cols if c in df_show.columns]
+        
+        st.dataframe(
+            df_show[display_cols],
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Stock actuel": st.column_config.NumberColumn("Stock actuel", format="%.0f"),
+                "Stock sécurité": st.column_config.NumberColumn("SS", format="%.0f"),
+                "Point commande": st.column_config.NumberColumn("PR", format="%.0f"),
+            }
+        )
+        
+        # Liste des actions urgentes
+        st.markdown("---")
+        st.markdown("#### 🚨 Actions prioritaires")
+        
+        urgentes = df_suivi[df_suivi["Alerte niveau"].isin(["🔴 ALERTE CRITIQUE - Stock inférieur au SS", "🟡 ALERTE - Point de commande atteint"])]
+        
+        if len(urgentes) == 0:
+            st.markdown(f"""
+            <div class='alert-success'>
+                ✅ Aucune alerte critique - Tous les stocks sont suffisants
+            </div>
+            """, unsafe_allow_html=True)
+        
+        for _, row in urgentes.iterrows():
+            color = COLORS["danger"] if "CRITIQUE" in row["Alerte niveau"] else COLORS["warning"]
+            bg_class = "alert-critical" if "CRITIQUE" in row["Alerte niveau"] else "alert-warning"
+            
+            st.markdown(f"""
+            <div class='{bg_class}'>
+                <strong>{row['Alerte niveau']}</strong><br/>
+                <strong>{row.get('Code article', '')} - {row.get('Description', '')}</strong><br/>
+                Stock actuel : {fmtInt(row.get('Stock actuel', 0))} | SS : {fmtInt(row.get('Stock sécurité', 0))} | PR : {fmtInt(row.get('Point commande', 0))}<br/>
+                <span style='font-size:0.85rem'>➡️ {row.get('Action', '')}</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+# ============================================================
+# PAGE 5: ÉVALUATION DES GAINS
+# ============================================================
+
+def page_evaluation_gains():
+    st.markdown(f"""
+    <div class='medoil-card'>
+        <h2>📈 Évaluation des gains</h2>
+        <p>Évaluez les gains potentiels générés par l'optimisation de vos stocks de sécurité</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if 'df_calculs' not in st.session_state:
+        st.info("Veuillez d'abord effectuer les calculs dans l'onglet 'Import & Calcul Automatique'")
+        return
+    
+    df = st.session_state['df_calculs'].copy()
+    
+    with st.expander("📊 Configuration des paramètres", expanded=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            reduction_ss = st.slider("Réduction du stock sécurité cible (%)", 0, 50, 25)
+        with col2:
+            taux_financier = st.number_input("Taux de coût financier (%)", value=8.0, step=0.5)
+    
+    # Calculs des gains
+    df["SS actuel"] = df["Stock sécurité"]
+    df["SS cible"] = (df["SS actuel"] * (1 - reduction_ss/100)).round(0)
+    df["Gain unités"] = df["SS actuel"] - df["SS cible"]
+    df["Gain financier"] = df["Gain unités"] * df["Coût unitaire"] * (taux_financier/100)
+    
+    gain_total_unites = df["Gain unités"].sum()
+    gain_total_financier = df["Gain financier"].sum()
+    
+    # KPIs
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown(f"""
+        <div class='medoil-card' style='text-align:center'>
+            <div class='metric-label'>Réduction SS</div>
+            <div class='metric-value' style='color:{COLORS["success"]}'>-{reduction_ss}%</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div class='medoil-card' style='text-align:center'>
+            <div class='metric-label'>Gain en unités</div>
+            <div class='metric-value'>{fmtInt(gain_total_unites)} u</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
+        <div class='medoil-card' style='text-align:center'>
+            <div class='metric-label'>Gain financier annuel</div>
+            <div class='metric-value'>{fmtInt(gain_total_financier)} TND</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Tableau détaillé
+    st.markdown("---")
+    st.markdown("#### 📋 Détail par article")
+    
+    detail_cols = ["Code article", "Description", "SS actuel", "SS cible", "Gain unités", "Coût unitaire", "Gain financier"]
+    detail_cols = [c for c in detail_cols if c in df.columns]
+    
+    st.dataframe(
+        df[detail_cols],
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "SS actuel": st.column_config.NumberColumn("SS actuel", format="%d"),
+            "SS cible": st.column_config.NumberColumn("SS cible", format="%d"),
+            "Gain unités": st.column_config.NumberColumn("Gain unités", format="%d"),
+            "Coût unitaire": st.column_config.NumberColumn("Coût unitaire (TND)", format="%.2f"),
+            "Gain financier": st.column_config.NumberColumn("Gain financier (TND)", format="%.0f"),
+        }
+    )
+    
+    # Graphique
+    st.markdown("---")
+    st.markdown("#### 📊 Comparaison SS actuel vs SS cible")
+    
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        name="SS actuel",
+        x=df["Code article"].astype(str),
+        y=df["SS actuel"],
+        marker_color=COLORS["primary"]
+    ))
+    fig.add_trace(go.Bar(
+        name=f"SS cible (-{reduction_ss}%)",
+        x=df["Code article"].astype(str),
+        y=df["SS cible"],
+        marker_color=COLORS["success"]
+    ))
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        barmode="group",
+        height=400,
+        xaxis_title="Article",
+        yaxis_title="Unités"
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Simulation sur 3 mois
+    st.markdown("---")
+    st.markdown("#### 📅 Simulation sur 3 mois")
+    
+    df_evolution = []
+    mois = ["Mois 1", "Mois 2", "Mois 3"]
+    
+    for _, row in df.iterrows():
+        conso_mensuelle = row.get("Conso mensuelle", 0)
+        ss_actuel = row.get("SS actuel", 0)
+        
+        for i, m in enumerate(mois):
+            stock_projete = ss_actuel - (conso_mensuelle * (i + 1))
+            df_evolution.append({
+                "Code article": row["Code article"],
+                "Description": row["Description"],
+                "Mois": m,
+                "Stock projeté": max(0, stock_projete),
+                "SS actuel": ss_actuel,
+                "Alerte": "RUPTURE" if stock_projete < 0 else "OK"
+            })
+    
+    df_evolution = pd.DataFrame(df_evolution)
+    st.dataframe(df_evolution, use_container_width=True, hide_index=True)
+
+# ============================================================
+# SIDEBAR & NAVIGATION
+# ============================================================
+
+with st.sidebar:
+    st.markdown("""
+    <div style='text-align:center; padding:1rem 0'>
+        <div style='font-size:2rem'>🛢️</div>
+        <h2 style='color:white; margin:0'>MedOil</h2>
+        <p style='color:rgba(255,255,255,0.7); font-size:0.8rem'>Supply Chain Manager</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.divider()
+    
+    # Navigation
+    pages = {
+        "🏠 Accueil": page_accueil,
+        "📥 Calcul Auto": page_calcul_auto,
+        "⚙️ Calculateurs": page_calculateurs,
+        "🔔 Alertes": page_alertes,
+        "📈 Évaluation Gains": page_evaluation_gains,
+    }
+    
+    selected = st.radio(
+        "Navigation",
+        list(pages.keys()),
+        label_visibility="collapsed"
+    )
+    
+    st.divider()
+    
+    st.markdown(f"""
+    <div style='text-align:center; margin-top:2rem'>
+        <p style='color:rgba(255,255,255,0.5); font-size:0.7rem'>
+            MedOil Supply Chain<br>
+            Version 2.0
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Affichage de la page sélectionnée
+pages[selected]()
