@@ -13,19 +13,261 @@ st.set_page_config(page_title="medoil ", page_icon="📦", layout="wide", initia
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=DM+Serif+Display:ital@0;1&display=swap');
-html, body, [class*="css"] { font-family: 'Syne', sans-serif; }
-.formula-box { background:#d5d7de; border-left:3px solid #47b828; border-radius:8px; padding:.9rem 1.1rem;
-    font-family:'DM Mono',monospace; font-size:.82rem; color:#8892a4; margin-bottom:1rem; line-height:1.7; }
-.f-eq { color:#60a5fa; font-weight:500; }
-.alert-critical { background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.3); border-radius:10px;
-    padding:1rem 1.2rem; margin-bottom:.7rem; color:#fca5a5; }
-.alert-warning  { background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.3); border-radius:10px;
-    padding:1rem 1.2rem; margin-bottom:.7rem; color:#fcd34d; }
-.alert-ok       { background:rgba(34,197,94,.08);  border:1px solid rgba(34,197,94,.3);  border-radius:10px;
-    padding:1rem 1.2rem; margin-bottom:.7rem; color:#86efac; }
-.alert-info     { background:rgba(20,184,166,.08); border:1px solid rgba(20,184,166,.3); border-radius:10px;
-    padding:1rem 1.2rem; margin-bottom:.7rem; color:#5eead4; }
+
+/* ── PALETTE FIGMA MED OIL ──────────────────────────────────────────────────
+   Vert foncé  : #1a3d1a  /  #2d6a2d  /  #4a8c3f
+   Or / Jaune  : #f5c518  /  #e8b400  /  #c9a000
+   Fond sidebar: #152415
+   Fond page   : #f5f5f0  (blanc cassé naturel)
+   Texte       : #1a2e1a  (vert très foncé)
+   Gris clair  : #e8e8e0
+   Blanc cards : #ffffff
+   ──────────────────────────────────────────────────────────────────────── */
+
+:root {
+    --green-dark:   #1a3d1a;
+    --green-mid:    #2d6a2d;
+    --green-light:  #4a8c3f;
+    --green-pale:   #c8e6c9;
+    --gold:         #f5c518;
+    --gold-dark:    #c9a000;
+    --gold-mid:     #e8b400;
+    --bg-page:      #f4f4ee;
+    --bg-card:      #ffffff;
+    --bg-sidebar:   #152415;
+    --text-dark:    #1a2e1a;
+    --text-mid:     #3d5c3d;
+    --text-muted:   #7a9a7a;
+    --border:       #d4e0d4;
+}
+
+html, body, [class*="css"] {
+    font-family: 'Syne', sans-serif;
+    background-color: var(--bg-page) !important;
+    color: var(--text-dark) !important;
+}
+
+/* ── SIDEBAR ─────────────────────────────────────────────────────────────── */
+[data-testid="stSidebar"] {
+    background-color: var(--bg-sidebar) !important;
+    border-right: 1px solid #2d4a2d !important;
+}
+[data-testid="stSidebar"] * { color: #c8e6c9 !important; }
+[data-testid="stSidebar"] h1 { color: #ffffff !important; font-size: 1.2rem !important; }
+[data-testid="stSidebar"] hr { border-color: #2d4a2d !important; }
+
+/* Nav links */
+[data-testid="stSidebarNavLink"] {
+    border-radius: 8px !important;
+    color: #a5c8a5 !important;
+    font-size: .88rem !important;
+    padding: .5rem .9rem !important;
+    margin: 2px 0 !important;
+    transition: background .15s;
+}
+[data-testid="stSidebarNavLink"]:hover {
+    background: rgba(245,197,24,.12) !important;
+    color: var(--gold) !important;
+}
+[data-testid="stSidebarNavLink"][aria-current="page"] {
+    background: rgba(245,197,24,.18) !important;
+    color: var(--gold) !important;
+    border-left: 3px solid var(--gold) !important;
+    font-weight: 600 !important;
+}
+
+/* ── MAIN CONTENT AREA ───────────────────────────────────────────────────── */
+.main .block-container {
+    background-color: var(--bg-page) !important;
+    padding-top: 1.5rem !important;
+}
+
+/* ── HEADINGS ────────────────────────────────────────────────────────────── */
+h1, h2, h3, h4 { color: var(--text-dark) !important; }
+
+/* ── FORMULA BOX ─────────────────────────────────────────────────────────── */
+.formula-box {
+    background: #eef4ee;
+    border-left: 3px solid var(--green-light);
+    border-radius: 8px;
+    padding: .9rem 1.1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: .82rem;
+    color: var(--text-mid);
+    margin-bottom: 1rem;
+    line-height: 1.7;
+    border: 1px solid var(--border);
+}
+.f-eq { color: var(--green-mid); font-weight: 600; }
+
+/* ── ALERT BOXES ─────────────────────────────────────────────────────────── */
+.alert-critical {
+    background: rgba(220,53,53,.07);
+    border: 1px solid rgba(220,53,53,.3);
+    border-left: 4px solid #dc3535;
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    margin-bottom: .7rem;
+    color: #8b1a1a;
+}
+.alert-warning {
+    background: rgba(245,197,24,.1);
+    border: 1px solid rgba(200,160,0,.3);
+    border-left: 4px solid var(--gold-dark);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    margin-bottom: .7rem;
+    color: #7a5c00;
+}
+.alert-ok {
+    background: rgba(74,140,63,.08);
+    border: 1px solid rgba(74,140,63,.3);
+    border-left: 4px solid var(--green-light);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    margin-bottom: .7rem;
+    color: var(--green-mid);
+}
+.alert-info {
+    background: rgba(45,106,45,.07);
+    border: 1px solid rgba(45,106,45,.25);
+    border-left: 4px solid var(--green-mid);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    margin-bottom: .7rem;
+    color: var(--text-mid);
+}
+
+/* ── STREAMLIT NATIVE WIDGETS (light mode override) ──────────────────────── */
+.stSelectbox > div > div,
+.stNumberInput > div > div > input,
+.stTextInput > div > div > input {
+    background: #ffffff !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-dark) !important;
+    border-radius: 8px !important;
+}
+.stSelectbox > div > div:hover,
+.stNumberInput > div > div > input:focus,
+.stTextInput > div > div > input:focus {
+    border-color: var(--green-light) !important;
+    box-shadow: 0 0 0 2px rgba(74,140,63,.15) !important;
+}
+
+/* Labels */
+[data-testid="stWidgetLabel"] p { color: var(--text-mid) !important; font-size: .85rem !important; }
+
+/* ── BUTTONS ─────────────────────────────────────────────────────────────── */
+.stButton > button, .stDownloadButton > button {
+    background: var(--gold) !important;
+    color: var(--green-dark) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 700 !important;
+    font-family: 'Syne', sans-serif !important;
+    padding: .55rem 1.4rem !important;
+    transition: background .15s, transform .1s !important;
+}
+.stButton > button:hover, .stDownloadButton > button:hover {
+    background: var(--gold-dark) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Primary download button */
+.stDownloadButton > button[kind="primary"] {
+    background: var(--gold) !important;
+    font-size: 1rem !important;
+    padding: .7rem 2rem !important;
+}
+
+/* ── TABS ────────────────────────────────────────────────────────────────── */
+[data-testid="stTabs"] [role="tablist"] {
+    border-bottom: 2px solid var(--border) !important;
+    gap: .5rem !important;
+}
+[data-testid="stTabs"] [role="tab"] {
+    color: var(--text-muted) !important;
+    background: transparent !important;
+    border-radius: 8px 8px 0 0 !important;
+    padding: .5rem 1.1rem !important;
+    font-weight: 500 !important;
+    transition: color .15s !important;
+}
+[data-testid="stTabs"] [role="tab"]:hover { color: var(--green-mid) !important; }
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+    color: var(--green-dark) !important;
+    border-bottom: 3px solid var(--gold) !important;
+    font-weight: 700 !important;
+}
+
+/* ── DATAFRAME ───────────────────────────────────────────────────────────── */
+[data-testid="stDataFrame"] {
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+}
+
+/* ── EXPANDER ────────────────────────────────────────────────────────────── */
+[data-testid="stExpander"] {
+    background: #ffffff !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+}
+[data-testid="stExpander"] summary {
+    color: var(--text-dark) !important;
+    font-weight: 600 !important;
+}
+
+/* ── INFO / SUCCESS / WARNING banners ────────────────────────────────────── */
+.stInfo    { background: rgba(45,106,45,.07) !important; border-color: var(--green-light) !important; color: var(--green-mid) !important; }
+.stSuccess { background: rgba(74,140,63,.08) !important; border-color: var(--green-light) !important; }
+.stWarning { background: rgba(245,197,24,.1) !important; border-color: var(--gold-dark) !important; }
+.stError   { background: rgba(220,53,53,.07) !important; }
+
+/* ── DIVIDER ─────────────────────────────────────────────────────────────── */
+hr { border-color: var(--border) !important; }
+
+/* ── MULTISELECT ─────────────────────────────────────────────────────────── */
+[data-testid="stMultiSelect"] span {
+    background: var(--green-pale) !important;
+    color: var(--green-dark) !important;
+    border-radius: 4px !important;
+}
+
+/* ── FILE UPLOADER ───────────────────────────────────────────────────────── */
+[data-testid="stFileUploader"] {
+    background: #ffffff !important;
+    border: 2px dashed var(--border) !important;
+    border-radius: 10px !important;
+}
+[data-testid="stFileUploader"]:hover {
+    border-color: var(--green-light) !important;
+}
+
+/* ── CHECKBOX ────────────────────────────────────────────────────────────── */
+[data-testid="stCheckbox"] input:checked + span {
+    background: var(--green-light) !important;
+    border-color: var(--green-light) !important;
+}
 </style>""", unsafe_allow_html=True)
+
+# ── Plotly theme (light) ──────────────────────────────────────────────────────
+def light_layout():
+    return dict(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(248,250,248,0.6)",
+        font=dict(color="#3d5c3d", family="Syne"),
+        legend=dict(bgcolor="rgba(255,255,255,.9)", bordercolor="#d4e0d4", borderwidth=1),
+        margin=dict(t=20, b=10, l=0, r=0)
+    )
+
+# ── Brand colors for charts ────────────────────────────────────────────────────
+C_GREEN  = "#2d6a2d"
+C_GOLD   = "#f5c518"
+C_GREEN2 = "#4a8c3f"
+C_RED    = "#dc3535"
+C_PURPLE = "#7a5c9a"
+C_MUTED  = "#7a9a7a"
 
 def fmt(n, d=1):
     if n is None or (isinstance(n, float) and (math.isnan(n) or math.isinf(n))): return "—"
@@ -35,29 +277,24 @@ def fmtInt(n):
     if n is None or (isinstance(n, float) and (math.isnan(n) or math.isinf(n))): return "—"
     return f"{round(n):,}"
  
-def mcard(label, value, unit, delta=None, color="#3b82f6"):
+def mcard(label, value, unit, delta=None, color="#2d6a2d"):
     dh = f"<div style='font-size:.7rem;color:{color};margin-top:4px'>{delta}</div>" if delta else ""
-    return f"""<div style='background:#1e2535;border:1px solid rgba(255,255,255,.1);border-radius:12px;
-        padding:1rem 1.2rem;text-align:center;border-top:3px solid {color}'>
-        <div style='font-size:.65rem;color:#5a6478;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.4rem'>{label}</div>
-        <div style='font-family:"DM Mono",monospace;font-size:1.6rem;font-weight:500;color:#e8eaf0'>{value}</div>
-        <div style='font-size:.68rem;color:#5a6478;margin-top:3px'>{unit}</div>{dh}</div>"""
+    return f"""<div style='background:#ffffff;border:1px solid #d4e0d4;border-radius:12px;
+        padding:1rem 1.2rem;text-align:center;border-top:3px solid {color};
+        box-shadow:0 2px 8px rgba(26,61,26,.06)'>
+        <div style='font-size:.65rem;color:#7a9a7a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.4rem'>{label}</div>
+        <div style='font-family:"DM Mono",monospace;font-size:1.6rem;font-weight:500;color:#1a2e1a'>{value}</div>
+        <div style='font-size:.68rem;color:#7a9a7a;margin-top:3px'>{unit}</div>{dh}</div>"""
  
 def fbox(title, formula, details):
     return (f"<div class='formula-box'>"
-            f"<div style='font-size:.65rem;color:#5a6478;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px'>{title}</div>"
+            f"<div style='font-size:.65rem;color:#7a9a7a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px'>{title}</div>"
             f"<span class='f-eq'>{formula}</span><br/>"
-            f"<span style='color:#5a6478'>{details}</span></div>")
+            f"<span style='color:#7a9a7a'>{details}</span></div>")
  
-def sc(s): return "#22c55e" if s>=85 else "#14b8a6" if s>=70 else "#f59e0b" if s>=55 else "#ef4444"
+def sc(s): return C_GREEN2 if s>=85 else "#14b8a6" if s>=70 else C_GOLD if s>=55 else C_RED
 def sl(s): return "Excellent" if s>=85 else "Bon" if s>=70 else "Moyen" if s>=55 else "Insuffisant"
- 
-def dark_layout():
-    return dict(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#8892a4", family="Syne"),
-                legend=dict(bgcolor="rgba(0,0,0,0)", bordercolor="rgba(255,255,255,.1)", borderwidth=1),
-                margin=dict(t=20, b=10, l=0, r=0))
- 
+
 # ── Calculs SC ────────────────────────────────────────────────────────────────
 def calc_ss(conso_mois, z=1.65, lt_mois=1.0, variab=0.15):
     sigma_d = conso_mois * variab
@@ -98,18 +335,19 @@ def build_excel(df_result):
         cell.border = brd
         if nf: cell.number_format = nf
  
-    groups = [(1,3,"Produit","D9E1F2"),(4,7,"Fournisseur","FFF2CC"),
-              (8,9,"Demand","D9E1F2"),(10,12,"EOQ","E2EFDA"),(13,15,"SS","FCE4D6")]
+    # Updated colors to match Figma palette
+    groups = [(1,3,"Produit","C8E6C9"),(4,7,"Fournisseur","FFF9C4"),
+              (8,9,"Demand","C8E6C9"),(10,12,"EOQ","DCEDC8"),(13,15,"SS","FFE0B2")]
     for c1,c2,label,bg in groups:
         ws.merge_cells(start_row=1, start_column=c1, end_row=1, end_column=c2)
         hdr(ws.cell(1, c1), label, bg)
  
-    hdrs = [("Code article","D9E1F2"),("Description Article","D9E1F2"),("Classe","D9E1F2"),
-            ("Fournisseur","FFF2CC"),("Délai livraison (mois)","FFF2CC"),
-            ("Incertitude fournisseur","FFF2CC"),("Délai de Sécurité (j)","FFF2CC"),
-            ("ABC","D9E1F2"),("XYZ","D9E1F2"),
-            ("EOQ","E2EFDA"),("MOQ","E2EFDA"),("Diff MOQ et EOQ","E2EFDA"),
-            ("Stock de sécurité","FCE4D6"),("Coût stock de sécurité","FCE4D6"),("Point de commande","FCE4D6")]
+    hdrs = [("Code article","C8E6C9"),("Description Article","C8E6C9"),("Classe","C8E6C9"),
+            ("Fournisseur","FFF9C4"),("Délai livraison (mois)","FFF9C4"),
+            ("Incertitude fournisseur","FFF9C4"),("Délai de Sécurité (j)","FFF9C4"),
+            ("ABC","C8E6C9"),("XYZ","C8E6C9"),
+            ("EOQ","DCEDC8"),("MOQ","DCEDC8"),("Diff MOQ et EOQ","DCEDC8"),
+            ("Stock de sécurité","FFE0B2"),("Coût stock de sécurité","FFE0B2"),("Point de commande","FFE0B2")]
     for col,(label,bg) in enumerate(hdrs, 1):
         hdr(ws.cell(2, col), label, bg)
  
@@ -139,7 +377,7 @@ def build_excel(df_result):
     for col,h in enumerate(src_hdrs, 1):
         c = ws2.cell(1, col)
         c.value = h; c.font = Font(bold=True, size=9, name="Arial")
-        c.fill  = PatternFill("solid", start_color="D9E1F2")
+        c.fill  = PatternFill("solid", start_color="C8E6C9")
         c.alignment = Alignment(horizontal="center", wrap_text=True); c.border = brd
         ws2.column_dimensions[get_column_letter(col)].width = 18
     for i, row in df_result.iterrows():
@@ -158,543 +396,292 @@ def build_excel(df_result):
  
  
 # ════════════════════════════════════════════════════════════════════════════════
-# FONCTIONS DE PAGE  (chacune = une page st.navigation)
+# PAGES
 # ════════════════════════════════════════════════════════════════════════════════
  
 def accueil():
+    # Hero banner — dark green + gold accent (matches Figma)
     st.markdown("""
-    <div style='background:linear-gradient(135deg,#0f1117,#161b26);padding:2rem 2.5rem;border-radius:16px;
-         border:1px solid rgba(255,255,255,.08);margin-bottom:1.5rem'>
-        <div style='font-size:.7rem;color:#60a5fa;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px'>
-            Outil supply chain manager · v2.0</div>
-        <h1 style='font-family:"DM Serif Display",serif;font-size:2.2rem;color:#e8eaf0;margin:0 0 .4rem'>
-            Pilotez votre <em style='color:#60a5fa'>supply chain</em><br/>avec précision</h1>
-        <p style='color:#8892a4;font-size:.95rem;margin:0'>
+    <div style='background:linear-gradient(135deg,#1a3d1a,#2d6a2d);padding:2.2rem 2.5rem;border-radius:16px;
+         border:1px solid rgba(245,197,24,.2);margin-bottom:1.5rem;position:relative;overflow:hidden'>
+        <div style='position:absolute;top:-30px;right:-30px;width:200px;height:200px;
+             background:radial-gradient(circle,rgba(245,197,24,.12),transparent 70%);border-radius:50%'></div>
+        <div style='font-size:.7rem;color:#f5c518;letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px;
+             background:rgba(245,197,24,.15);display:inline-block;padding:.3rem .8rem;border-radius:20px;
+             border:1px solid rgba(245,197,24,.3)'>
+            ✦ Outil supply chain manager · v2.0</div>
+        <h1 style='font-family:"DM Serif Display",serif;font-size:2.3rem;color:#ffffff;margin:.4rem 0;line-height:1.25'>
+            Pilotez votre <em style='color:#f5c518'>supply chain</em><br/>avec précision</h1>
+        <p style='color:#a5c8a5;font-size:.95rem;margin:.8rem 0 1.4rem'>
             Importez votre Excel, calculez automatiquement EOQ, SS et points de commande, exportez le tableau rempli.</p>
+        <div style='display:inline-block;background:#f5c518;color:#1a3d1a;font-weight:700;font-size:.9rem;
+             padding:.6rem 1.6rem;border-radius:8px;cursor:pointer'>Commencer l'analyse →</div>
     </div>""", unsafe_allow_html=True)
- 
+
+    # KPI row (matches Figma stats strip)
+    st.markdown("""
+    <div style='display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem'>
+        <div style='background:#ffffff;border:1px solid #d4e0d4;border-radius:12px;padding:1.2rem 1.4rem;
+             box-shadow:0 2px 8px rgba(26,61,26,.06)'>
+            <div style='font-size:.72rem;color:#7a9a7a;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem'>
+                📦 Articles gérés</div>
+            <div style='font-size:1.9rem;font-weight:700;color:#1a2e1a;font-family:"DM Mono",monospace'>1 240+</div>
+        </div>
+        <div style='background:#ffffff;border:1px solid #d4e0d4;border-radius:12px;padding:1.2rem 1.4rem;
+             box-shadow:0 2px 8px rgba(26,61,26,.06)'>
+            <div style='font-size:.72rem;color:#7a9a7a;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem'>
+                📈 Taux de service moyen</div>
+            <div style='font-size:1.9rem;font-weight:700;color:#2d6a2d;font-family:"DM Mono",monospace'>94.7%</div>
+        </div>
+        <div style='background:#ffffff;border:1px solid #d4e0d4;border-radius:12px;padding:1.2rem 1.4rem;
+             box-shadow:0 2px 8px rgba(26,61,26,.06)'>
+            <div style='font-size:.72rem;color:#7a9a7a;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem'>
+                💰 Économies SS estimées</div>
+            <div style='font-size:1.9rem;font-weight:700;color:#c9a000;font-family:"DM Mono",monospace'>12.4%</div>
+        </div>
+        <div style='background:#ffffff;border:1px solid #d4e0d4;border-radius:12px;padding:1.2rem 1.4rem;
+             box-shadow:0 2px 8px rgba(26,61,26,.06)'>
+            <div style='font-size:.72rem;color:#7a9a7a;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem'>
+                🚚 Fournisseurs évalués</div>
+            <div style='font-size:1.9rem;font-weight:700;color:#1a2e1a;font-family:"DM Mono",monospace'>38</div>
+        </div>
+    </div>""", unsafe_allow_html=True)
+
+    # Modules disponibles
+    st.markdown("<div style='font-size:1rem;font-weight:700;color:#1a2e1a;margin-bottom:1rem;padding-left:4px;border-left:3px solid #f5c518;padding-left:10px'>Modules disponibles</div>", unsafe_allow_html=True)
     cols = st.columns(4)
-    mods = [("📥","Import & Calcul auto","Importez votre fichier Excel et générez le tableau rempli à télécharger"),
-            ("📐","EOQ / Wilson","Quantité économique — minimise le coût total logistique avec courbe interactive"),
-            ("📦","Stock de sécurité","Formule complète avec variabilité de la demande et du délai fournisseur"),
-            ("🔔","Alertes stock","Surveillance des niveaux et alertes rupture par article en temps réel")]
-    for col,(ic,ti,de) in zip(cols, mods):
+    mods = [
+        ("📥", "#2d6a2d", "Import & Calcul auto",   "Importez votre fichier Excel et générez le tableau rempli à télécharger"),
+        ("📐", "#c9a000", "Calculateurs SC",          "EOQ · SS · KPIs · Point de réappro. avec courbes interactives"),
+        ("🚚", "#4a8c3f", "Éval. Fournisseurs",       "Scorecard fournisseur — OTD, fill rate, qualité, réactivité"),
+        ("🔔", "#dc3535", "Alertes & Stocks",          "Surveillance des niveaux et alertes rupture par article"),
+    ]
+    for col,(ic,accent,ti,de) in zip(cols, mods):
         with col:
-            st.markdown(f"<div style='background:#161b26;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:1.2rem'>"
-                        f"<div style='font-size:1.5rem;margin-bottom:8px'>{ic}</div>"
-                        f"<div style='font-size:.9rem;font-weight:600;color:#e8eaf0;margin-bottom:6px'>{ti}</div>"
-                        f"<div style='font-size:.78rem;color:#5a6478;line-height:1.5'>{de}</div></div>",
-                        unsafe_allow_html=True)
+            st.markdown(
+                f"<div style='background:#ffffff;border:1px solid #d4e0d4;border-radius:12px;padding:1.3rem;"
+                f"border-top:3px solid {accent};box-shadow:0 2px 8px rgba(26,61,26,.05)'>"
+                f"<div style='font-size:1.6rem;margin-bottom:10px'>{ic}</div>"
+                f"<div style='font-size:.9rem;font-weight:700;color:#1a2e1a;margin-bottom:6px'>{ti}</div>"
+                f"<div style='font-size:.78rem;color:#7a9a7a;line-height:1.55'>{de}</div></div>",
+                unsafe_allow_html=True)
     st.divider()
-    st.info(" Commencez par **Import & Calcul automatique** dans la barre latérale pour charger votre fichier Excel.")
+    st.info("Commencez par **Import & Calcul automatique** dans la barre latérale pour charger votre fichier Excel.")
  
- 
+
 # ─────────────────────────────────────────────────────────────────────────────
 def import_calcul():
-    st.markdown(f"""
-    <div class='medoil-card'>
-        <h2>📥 Import & Calcul Automatique</h2>
-        <p>Importez vos fichiers - Les résultats s'affichent automatiquement sous chaque tableau</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # ============================================================
-    # CONFIGURATION DES DÉLAIS PAR SOURCE
-    # ============================================================
-    SOURCE_DELAYS = {
-        "Export": {"mois": 4, "jours": 120, "label": "Export (120 jours)"},
-        "Local": {"mois": 0.5, "jours": 15, "label": "Local (15 jours)"},
-        "BM": {"mois": 0.066, "jours": 2, "label": "BM (2 jours)"}
-    }
-    
-    # ============================================================
-    # 1. TABLEAU DES CONSOMMATIONS (M1 à M12)
-    # ============================================================
-    st.markdown("### 📊 1. Tableau des consommations mensuelles")
-    st.caption("Importez un fichier avec les consommations des 12 derniers mois")
-    
-    with st.expander("📋 Format attendu - Consommations mensuelles", expanded=False):
-        st.markdown("""
-| Colonne | Obligatoire | Description |
-|---|---|---|
-| `Code article` | ✅ | Identifiant unique du produit |
-| `Article` | ✅ | Désignation du produit |
-| `M1` à `M12` | ✅ | Consommation de chaque mois |
-        """)
-    
-    uploaded_conso = st.file_uploader(
-        "📂 Fichier des consommations mensuelles (.xlsx / .xls)",
-        type=["xlsx", "xls"],
-        key="conso_upload"
-    )
-    
-    # Stockage des données en session
-    if 'df_conso_raw' not in st.session_state:
-        st.session_state.df_conso_raw = None
-    if 'df_stats_conso' not in st.session_state:
-        st.session_state.df_stats_conso = None
-    
-    # Affichage IMMÉDIAT des résultats dès l'upload
-    if uploaded_conso is not None:
-        try:
-            # Chargement
-            df_conso = pd.read_excel(uploaded_conso)
-            df_conso.columns = [str(c).strip() for c in df_conso.columns]
-            st.session_state.df_conso_raw = df_conso
-            
-            # Affichage du tableau brut
-            st.markdown("**📋 Tableau importé:**")
-            st.dataframe(df_conso, use_container_width=True, hide_index=True)
-            
-            # Identification des colonnes
-            conso_cols = []
-            for col in df_conso.columns:
-                col_upper = col.upper()
-                if col_upper.startswith('M') and col_upper[1:].isdigit():
-                    conso_cols.append(col)
-            
-            if len(conso_cols) == 0:
-                for col in df_conso.columns:
-                    if col.upper() not in ['CODE ARTICLE', 'CODE', 'ARTICLE', 'DESCRIPTION', 'PRODUIT']:
-                        if df_conso[col].dtype in ['float64', 'int64']:
-                            conso_cols.append(col)
-            
-            # Identification code article
-            code_col = None
-            article_col = None
-            
-            for col in df_conso.columns:
-                col_lower = col.lower().strip()
-                if 'code' in col_lower and 'article' in col_lower:
-                    code_col = col
-                elif col_lower == 'code':
-                    code_col = col
-                elif 'article' in col_lower or 'designation' in col_lower or 'description' in col_lower:
-                    article_col = col
-            
-            if code_col is None:
-                st.error("❌ Colonne 'Code article' non trouvée")
-            else:
-                # Calcul des statistiques
-                stats = []
-                for _, row in df_conso.iterrows():
-                    code = str(row[code_col]).strip()
-                    article = str(row[article_col]).strip() if article_col else code
-                    
-                    consommations = []
-                    for col in conso_cols:
-                        val = clean_num(row[col])
-                        if val > 0:
-                            consommations.append(val)
-                    
-                    if len(consommations) >= 2:
-                        moyenne = np.mean(consommations)
-                        ecart_type = np.std(consommations, ddof=1)
-                        cv = (ecart_type / moyenne * 100) if moyenne > 0 else 0
-                    elif len(consommations) == 1:
-                        moyenne = consommations[0]
-                        ecart_type = moyenne * 0.15
-                        cv = 15
-                    else:
-                        moyenne = 0
-                        ecart_type = 0
-                        cv = 0
-                    
-                    stats.append({
-                        "Code article": code,
-                        "Article": article,
-                        "Conso moyenne/mois": round(moyenne, 2),
-                        "Écart-type mensuel": round(ecart_type, 2),
-                        "CV (%)": round(cv, 1),
-                        "Nb mois valides": len(consommations),
-                        "Mois minimum": min(consommations) if consommations else 0,
-                        "Mois maximum": max(consommations) if consommations else 0
-                    })
-                
-                df_stats = pd.DataFrame(stats)
-                st.session_state.df_stats_conso = df_stats
-                
-                # ✅ AFFICHAGE DES RÉSULTATS JUSTE EN DESSOUS
-                st.markdown("---")
-                st.markdown("**📊 RÉSULTATS - Statistiques de consommation:**")
-                st.dataframe(
-                    df_stats,
-                    use_container_width=True,
-                    hide_index=True,
-                    column_config={
-                        "Conso moyenne/mois": st.column_config.NumberColumn("Moyenne/mois", format="%.1f"),
-                        "Écart-type mensuel": st.column_config.NumberColumn("Écart-type", format="%.1f"),
-                        "CV (%)": st.column_config.NumberColumn("CV (%)", format="%.1f%%"),
-                    }
-                )
-                
-                # Graphique des CV
-                if len(df_stats) > 0:
-                    st.markdown("**📈 Coefficient de variation par produit:**")
-                    fig_cv = go.Figure()
-                    colors = ["#ef4444" if cv > 30 else "#f59e0b" if cv > 15 else "#22c55e" for cv in df_stats["CV (%)"]]
-                    fig_cv.add_trace(go.Bar(
-                        x=df_stats["Code article"].astype(str),
-                        y=df_stats["CV (%)"],
-                        marker_color=colors,
-                        text=df_stats["CV (%)"].apply(lambda x: f"{x:.1f}%"),
-                        textposition="outside"
-                    ))
-                    fig_cv.add_hline(y=15, line_dash="dash", line_color="#f59e0b", annotation_text="Variabilité modérée (15%)")
-                    fig_cv.add_hline(y=30, line_dash="dash", line_color="#ef4444", annotation_text="Variabilité élevée (30%)")
-                    fig_cv.update_layout(
-                        paper_bgcolor="rgba(0,0,0,0)",
-                        plot_bgcolor="rgba(0,0,0,0)",
-                        height=350,
-                        xaxis=dict(title="Produit", tickangle=-45),
-                        yaxis=dict(title="Coefficient de variation (%)")
-                    )
-                    st.plotly_chart(fig_cv, use_container_width=True)
-                
-        except Exception as e:
-            st.error(f"Erreur de lecture: {e}")
-    
-    # ============================================================
-    # 2. TABLEAU DES PRODUITS ET PARAMÈTRES
-    # ============================================================
-    st.markdown("---")
-    st.markdown("### 📦 2. Tableau des produits et paramètres")
-    st.caption("Importez le fichier avec les informations de base et les paramètres de calcul")
-    
-    with st.expander("📋 Format attendu - Produits", expanded=False):
+    st.markdown("## 📥 Import & Calcul automatique")
+    st.markdown("<p style='color:#7a9a7a'>Importez votre fichier — EOQ, SS et point de commande calculés pour chaque article</p>",
+                unsafe_allow_html=True)
+ 
+    with st.expander("📋 Colonnes attendues dans votre fichier Excel"):
         st.markdown("""
 | Colonne | Obligatoire | Description |
 |---|---|---|
 | `Code article` | ✅ | Identifiant unique |
-| `Article` | ✅ | Désignation du produit |
-| `Source` | ✅ | Export / Local / BM |
-| `Unité` | — | Unité de mesure |
-| `Coût unitaire` | ✅ | Coût d'achat unitaire (TND) |
-| `Coût passation` | ✅ | Coût par commande (TND) |
-| `Taux stockage (%)` | ✅ | Taux de détention du stock (%) |
-        """)
-    
-    uploaded_produits = st.file_uploader(
-        "📂 Fichier des produits et paramètres (.xlsx / .xls)",
-        type=["xlsx", "xls"],
-        key="produits_upload"
-    )
-    
-    # Stockage
-    if 'df_produits_raw' not in st.session_state:
-        st.session_state.df_produits_raw = None
-    
-    # Affichage IMMÉDIAT des résultats dès l'upload
-    if uploaded_produits is not None:
+| `Description Article` | ✅ | Désignation |
+| `Classe` | — | MP, SF, PF… |
+| `Consommation / mois` | ✅ | Consommation mensuelle moyenne |
+| `Coût de revient` | ✅ | Coût unitaire (TND) |
+| `Consommation/ an` | — | Calculée si absente |
+| `Stock Sécurité` | — | SS existant (pour comparaison) |
+| `Cout total annuelle` | — | Affiché dans le rapport |
+| `Fournisseur` | — | Repris dans l'export |
+| `Délai de livraison` | — | En mois (sinon valeur par défaut) |
+| `MOQ` / `Taille de lot` | — | Minimum order quantity |
+""")
+ 
+    st.markdown("#### ⚙️ Paramètres de calcul globaux")
+    c1,c2,c3,c4,c5 = st.columns(5)
+    with c1: p_z_opt = st.selectbox("Niveau de service", ["90% (Z=1.28)","95% (Z=1.65)","97.5% (Z=1.96)","99% (Z=2.33)"], index=1)
+    with c2: p_lt    = st.number_input("Délai défaut (mois)", value=1.0, min_value=0.1, step=0.5)
+    with c3: p_sc    = st.number_input("Coût passation (TND)", value=150.0, min_value=1.0, step=10.0)
+    with c4: p_taux  = st.number_input("Taux stockage (%)", value=20.0, min_value=1.0, step=1.0)
+    with c5: p_var   = st.number_input("Variabilité demande (%)", value=15.0, min_value=1.0, step=1.0)
+    Z = {"90% (Z=1.28)":1.28,"95% (Z=1.65)":1.65,"97.5% (Z=1.96)":1.96,"99% (Z=2.33)":2.33}[p_z_opt]
+ 
+    st.divider()
+    st.markdown("#### 📂 Chargement du fichier")
+    uploaded = st.file_uploader("Déposez votre fichier Excel (.xlsx / .xls)", type=["xlsx","xls"])
+    use_demo = st.checkbox("Utiliser les données de démo (votre format)", value=not bool(uploaded))
+ 
+    df_source = None
+ 
+    if uploaded:
         try:
-            df_produits = pd.read_excel(uploaded_produits)
-            df_produits.columns = [str(c).strip() for c in df_produits.columns]
-            st.session_state.df_produits_raw = df_produits
-            
-            # Affichage du tableau brut
-            st.markdown("**📋 Tableau importé:**")
-            st.dataframe(df_produits, use_container_width=True, hide_index=True)
-            
-            # Vérification des colonnes obligatoires
-            required_cols = {
-                "Code article": lambda x: 'code' in x.lower() and 'article' in x.lower(),
-                "Coût unitaire": lambda x: 'cout' in x.lower() or 'coût' in x.lower(),
-                "Coût passation": lambda x: 'passation' in x.lower() or 'commande' in x.lower(),
-                "Taux stockage": lambda x: 'stockage' in x.lower() or 'detention' in x.lower(),
-                "Source": lambda x: x.lower() == 'source'
-            }
-            
-            found_cols = {}
-            for col in df_produits.columns:
-                col_lower = col.lower()
-                if 'code' in col_lower and 'article' in col_lower:
-                    found_cols["Code article"] = col
-                elif ('cout' in col_lower or 'coût' in col_lower) and 'unitaire' in col_lower:
-                    found_cols["Coût unitaire"] = col
-                elif ('cout' in col_lower or 'coût' in col_lower) and ('passation' in col_lower or 'commande' in col_lower):
-                    found_cols["Coût passation"] = col
-                elif 'stockage' in col_lower or 'detention' in col_lower:
-                    found_cols["Taux stockage"] = col
-                elif col_lower == 'source':
-                    found_cols["Source"] = col
-            
-            # ✅ AFFICHAGE DES VÉRIFICATIONS
-            st.markdown("---")
-            st.markdown("**✅ Vérification des colonnes obligatoires:**")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                for req in ["Code article", "Coût unitaire", "Coût passation"]:
-                    if req in found_cols:
-                        st.success(f"✅ {req}: trouvé → '{found_cols[req]}'")
-                    else:
-                        st.error(f"❌ {req}: non trouvé")
-            
-            with col2:
-                for req in ["Taux stockage", "Source"]:
-                    if req in found_cols:
-                        st.success(f"✅ {req}: trouvé → '{found_cols[req]}'")
-                    else:
-                        st.error(f"❌ {req}: non trouvé")
-            
-            # Si toutes les colonnes sont trouvées, afficher un aperçu des valeurs
-            if len(found_cols) >= 4:
-                st.markdown("**📊 Aperçu des paramètres:**")
-                
-                # Créer un DataFrame d'aperçu
-                apercu = []
-                for _, row in df_produits.head(10).iterrows():
-                    apercu.append({
-                        "Code": str(row[found_cols.get("Code article", df_produits.columns[0])]),
-                        "Source": row[found_cols.get("Source", df_produits.columns[0])] if "Source" in found_cols else "N/A",
-                        "Coût unitaire": row[found_cols.get("Coût unitaire", df_produits.columns[0])] if "Coût unitaire" in found_cols else 0,
-                        "Coût passation": row[found_cols.get("Coût passation", df_produits.columns[0])] if "Coût passation" in found_cols else 0,
-                        "Taux stockage": row[found_cols.get("Taux stockage", df_produits.columns[0])] if "Taux stockage" in found_cols else 0,
-                    })
-                
-                df_apercu = pd.DataFrame(apercu)
-                st.dataframe(df_apercu, use_container_width=True, hide_index=True)
-                
+            all_sheets = pd.read_excel(uploaded, sheet_name=None, header=None)
+            names = list(all_sheets.keys())
+            sel   = names[0] if len(names)==1 else st.selectbox("Choisir la feuille", names)
+            raw   = all_sheets[sel]
+ 
+            hrow = 0
+            for i, row in raw.iterrows():
+                row_str = " ".join([str(v).lower() for v in row if pd.notna(v)])
+                if any(k in row_str for k in ["code","description","article","consommation"]):
+                    hrow = i; break
+ 
+            df_raw = pd.read_excel(uploaded, sheet_name=sel, header=hrow)
+            df_raw.columns = [str(c).strip() for c in df_raw.columns]
+            df_raw = df_raw.dropna(how="all")
+ 
+            cmap = {}
+            for col in df_raw.columns:
+                cl = col.lower().strip()
+                if "code" in cl and "article" in cl:                       cmap["Code article"] = col
+                elif "description" in cl or "désignation" in cl:           cmap["Description Article"] = col
+                elif cl == "classe":                                        cmap["Classe"] = col
+                elif "consommation" in cl and "mois" in cl:                cmap["Conso mois"] = col
+                elif "coût de revient" in cl or "cout de revient" in cl:   cmap["Coût revient"] = col
+                elif "consommation" in cl and "an" in cl:                  cmap["Conso an"] = col
+                elif "stock" in cl and ("sécu" in cl or "sécurité" in cl): cmap["SS existant"] = col
+                elif "cout total" in cl or "coût total" in cl:             cmap["Coût total an"] = col
+                elif "fournisseur" in cl:                                   cmap["Fournisseur"] = col
+                elif "délai" in cl and "livraison" in cl:                   cmap["Délai livraison (mois)"] = col
+                elif "taille" in cl and "lot" in cl:                        cmap["MOQ"] = col
+                elif cl == "moq":                                            cmap["MOQ"] = col
+ 
+            df_source = df_raw.rename(columns={v:k for k,v in cmap.items()})
+            keep = [k for k in ["Code article","Description Article","Classe","Fournisseur",
+                                 "Délai livraison (mois)","MOQ","Conso mois","Coût revient",
+                                 "Conso an","SS existant","Coût total an"] if k in df_source.columns]
+            df_source = df_source[keep].copy()
+            for c in ["Conso mois","Coût revient","Conso an","SS existant","Coût total an","Délai livraison (mois)","MOQ"]:
+                if c in df_source.columns:
+                    df_source[c] = pd.to_numeric(df_source[c], errors="coerce").fillna(0)
+            if "Code article" in df_source.columns:
+                df_source = df_source[df_source["Code article"].notna()]
+                df_source = df_source[df_source["Code article"].astype(str).str.strip() != ""]
+            st.success(f"✅ {len(df_source)} articles chargés depuis « {sel} »")
         except Exception as e:
-            st.error(f"Erreur de lecture: {e}")
-    
-    # ============================================================
-    # 3. CALCUL AUTOMATIQUE DÈS QUE LES 2 FICHIERS SONT CHARGÉS
-    # ============================================================
-    
-    # Vérifier si les deux fichiers sont chargés
-    both_loaded = (st.session_state.df_conso_raw is not None and 
-                   st.session_state.df_produits_raw is not None and
-                   st.session_state.df_stats_conso is not None)
-    
-    if both_loaded:
+            st.error(f"Erreur de lecture : {e}")
+ 
+    if use_demo and df_source is None:
+        df_source = pd.DataFrame({
+            "Code article":       [40007,40010,40011,40014,40015,40036,40042,40055,40062,40063],
+            "Description Article":["NYSOSEL (NICKEL CATALYSEUR)","TERRE TONSIL","PAPIER FILTRE",
+                                   "TOILE FILTRANTE TERRE","PERLITE FILTRATION PAF1","SEL MARIN FIN",
+                                   "MYVEROL 18-04 MYVEROL","TRISYL","VITAMINE A","VITAMINE E"],
+            "Classe":             ["MP"]*10,
+            "Conso mois":         [324,5886,509,32460,959,3747,3147,4432,16,22],
+            "Coût revient":       [59.23,1.709,3.823,49.787,1.700,0,0,8.189,0,0],
+            "Conso an":           [3888,70632,6108,389520,11508,44964,37764,53184,192,264],
+            "SS existant":        [2673,6353,2859,68,1171,1560,20000,5000,74,100],
+            "Coût total an":      [230286,120710,23351,19393032,19564,0,0,435524,0,0],
+        })
+        st.info("📊 Données de démo chargées — basées sur votre fichier Excel d'origine")
+ 
+    if df_source is not None and len(df_source) > 0:
+        with st.expander("👁 Aperçu des données sources", expanded=False):
+            st.dataframe(df_source, use_container_width=True, hide_index=True)
+ 
+        results = []
+        for _, row in df_source.iterrows():
+            cm  = float(row.get("Conso mois", 0) or 0)
+            ca  = float(row.get("Conso an", 0) or cm*12) or cm*12
+            cu  = float(row.get("Coût revient", 0) or 0)
+            lt  = float(row.get("Délai livraison (mois)", p_lt) or p_lt)
+            moq = float(row.get("MOQ", 0) or 0)
+ 
+            ss   = calc_ss(cm, z=Z, lt_mois=lt, variab=p_var/100)
+            eoq, _, _ = calc_eoq(ca, cu, sc_cost=p_sc, taux=p_taux/100)
+            pr   = calc_pr(cm, lt, ss)
+            css  = round(ss * cu, 2) if cu > 0 else 0
+            diff = round(eoq - moq) if moq > 0 else ""
+ 
+            results.append({
+                "Code article":          row.get("Code article",""),
+                "Description Article":   row.get("Description Article",""),
+                "Classe":                row.get("Classe",""),
+                "Fournisseur":           row.get("Fournisseur",""),
+                "Délai livraison (mois)":lt,
+                "Incertitude":           p_var/100,
+                "EOQ":                   eoq,
+                "MOQ":                   int(moq) if moq>0 else "",
+                "Diff MOQ EOQ":          diff,
+                "Stock sécurité":        ss,
+                "SS existant":           float(row.get("SS existant", 0) or 0),
+                "Coût SS":               css,
+                "Point de commande":     pr,
+                "Conso mois":            cm,
+                "Coût revient":          cu,
+                "Conso an":              ca,
+                "Coût total an":         float(row.get("Coût total an", 0) or 0),
+            })
+ 
+        df_res = pd.DataFrame(results)
+ 
+        st.divider()
+        st.markdown("#### 🧮 Tableau des calculs")
+        disp = df_res[["Code article","Description Article","Classe",
+                       "EOQ","MOQ","Diff MOQ EOQ","Stock sécurité","Coût SS","Point de commande"]].copy()
+        st.dataframe(disp, use_container_width=True, hide_index=True,
+            column_config={
+                "EOQ":               st.column_config.NumberColumn("EOQ (u)",           format="%d"),
+                "MOQ":               st.column_config.NumberColumn("MOQ (u)"),
+                "Diff MOQ EOQ":      st.column_config.NumberColumn("Diff MOQ/EOQ"),
+                "Stock sécurité":    st.column_config.NumberColumn("Stock sécu. (u)",   format="%d"),
+                "Coût SS":           st.column_config.NumberColumn("Coût SS (TND)",      format="%.2f"),
+                "Point de commande": st.column_config.NumberColumn("Point commande (u)", format="%d"),
+            })
+ 
         st.markdown("---")
-        st.markdown("## 🚀 CALCUL AUTOMATIQUE - EOQ, Stock sécurité, Point de commande")
-        st.markdown("Les deux fichiers sont chargés, voici les résultats complets:")
-        
-        # Bouton optionnel pour recalculer (mais les résultats s'affichent automatiquement)
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            if st.button("🔄 RECALCULER LES INDICATEURS", type="primary", use_container_width=True):
-                st.rerun()
-        
-        try:
-            # Récupération des données
-            df_conso = st.session_state.df_conso_raw
-            df_stats = st.session_state.df_stats_conso
-            df_produits = st.session_state.df_produits_raw
-            
-            # Identification des colonnes dans df_produits
-            code_col_prod = None
-            source_col = None
-            cout_unitaire_col = None
-            cout_passation_col = None
-            taux_stockage_col = None
-            unite_col = None
-            article_col_prod = None
-            
-            for col in df_produits.columns:
-                col_lower = col.lower().strip()
-                if 'code' in col_lower and 'article' in col_lower:
-                    code_col_prod = col
-                elif col_lower == 'code':
-                    code_col_prod = col
-                elif 'article' in col_lower or 'designation' in col_lower:
-                    article_col_prod = col
-                elif col_lower == 'source':
-                    source_col = col
-                elif 'unite' in col_lower or 'um' in col_lower:
-                    unite_col = col
-                elif ('cout' in col_lower or 'coût' in col_lower) and 'unitaire' in col_lower:
-                    cout_unitaire_col = col
-                elif ('cout' in col_lower or 'coût' in col_lower) and ('passation' in col_lower or 'commande' in col_lower):
-                    cout_passation_col = col
-                elif 'stockage' in col_lower or 'detention' in col_lower:
-                    taux_stockage_col = col
-            
-            # Nettoyage
-            df_produits[code_col_prod] = df_produits[code_col_prod].astype(str).str.strip()
-            
-            # Fusion
-            df_merged = df_stats.merge(
-                df_produits[[code_col_prod, article_col_prod, source_col, unite_col, 
-                             cout_unitaire_col, cout_passation_col, taux_stockage_col]],
-                left_on="Code article",
-                right_on=code_col_prod,
-                how="inner"
-            )
-            
-            if len(df_merged) == 0:
-                st.error("❌ Aucun produit en commun entre les deux fichiers")
-            else:
-                # Renommage
-                df_merged = df_merged.rename(columns={
-                    cout_unitaire_col: "Coût unitaire",
-                    cout_passation_col: "Coût passation",
-                    taux_stockage_col: "Taux stockage (%)",
-                    source_col: "Source",
-                    unite_col: "Unité"
+        st.markdown("#### 📊 Synthèse")
+        c1,c2,c3,c4 = st.columns(4)
+        eoq_mean = df_res[df_res["EOQ"]>0]["EOQ"].mean()
+        ecarts   = (df_res["Stock sécurité"] > df_res["SS existant"] * 1.3).sum()
+        with c1: st.markdown(mcard("Articles traités",    str(len(df_res)),                   "articles",                          color=C_GREEN),  unsafe_allow_html=True)
+        with c2: st.markdown(mcard("Coût total SS",       f"{df_res['Coût SS'].sum():,.0f}",  "TND immobilisés",  color=C_GOLD),   unsafe_allow_html=True)
+        with c3: st.markdown(mcard("EOQ moyen",           fmtInt(eoq_mean),                    "u / commande",     color=C_GREEN2), unsafe_allow_html=True)
+        with c4: st.markdown(mcard("SS à réviser",        str(ecarts),                         "SS calculé > 130% SS fichier",     color=C_RED),    unsafe_allow_html=True)
+ 
+        st.markdown("---")
+        st.markdown("#### 📈 EOQ · Stock de sécurité · Point de commande")
+        labels = df_res["Code article"].astype(str).tolist()
+        fig = go.Figure()
+        fig.add_trace(go.Bar(name="EOQ", x=labels, y=df_res["EOQ"], marker_color=C_GREEN,
+                             text=df_res["EOQ"].apply(lambda v: f"{int(v):,}" if v>0 else ""), textposition="outside"))
+        fig.add_trace(go.Bar(name="Stock sécurité", x=labels, y=df_res["Stock sécurité"], marker_color=C_GOLD,
+                             text=df_res["Stock sécurité"].apply(lambda v: f"{int(v):,}"), textposition="outside"))
+        fig.add_trace(go.Scatter(name="Point de commande", x=labels, y=df_res["Point de commande"],
+                                 mode="markers+lines", marker=dict(color=C_RED,size=9,symbol="diamond"),
+                                 line=dict(color=C_RED,width=2,dash="dash")))
+        if df_res["SS existant"].sum() > 0:
+            fig.add_trace(go.Scatter(name="SS existant (fichier)", x=labels, y=df_res["SS existant"],
+                                     mode="markers+lines", marker=dict(color=C_PURPLE,size=7,symbol="circle"),
+                                     line=dict(color=C_PURPLE,width=1.5,dash="dot")))
+        fig.update_layout(**light_layout(), barmode="group", height=420,
+                          xaxis=dict(title="Article", gridcolor="rgba(0,0,0,.06)"),
+                          yaxis=dict(title="Unités",  gridcolor="rgba(0,0,0,.06)"))
+        st.plotly_chart(fig, use_container_width=True)
+ 
+        if df_res["SS existant"].sum() > 0:
+            st.markdown("---")
+            st.markdown("#### 🔍 SS calculé vs SS dans votre fichier")
+            comp = df_res[["Code article","Description Article","SS existant","Stock sécurité"]].copy()
+            comp["Écart (u)"] = comp["Stock sécurité"] - comp["SS existant"]
+            comp["Écart %"]   = np.where(comp["SS existant"]>0,
+                                         (comp["Écart (u)"] / comp["SS existant"] * 100).round(1), None)
+            st.dataframe(comp, use_container_width=True, hide_index=True,
+                column_config={
+                    "SS existant":    st.column_config.NumberColumn("SS fichier",  format="%d"),
+                    "Stock sécurité": st.column_config.NumberColumn("SS calculé",  format="%d"),
+                    "Écart (u)":      st.column_config.NumberColumn("Écart (u)",   format="%d"),
+                    "Écart %":        st.column_config.NumberColumn("Écart %",     format="%.1f%%"),
                 })
-                
-                if article_col_prod:
-                    df_merged["Article"] = df_merged[article_col_prod]
-                
-                # Analyse ABC
-                df_merged["CA annuel"] = df_merged["Conso moyenne/mois"] * 12 * df_merged["Coût unitaire"]
-                df_abc = df_merged.sort_values("CA annuel", ascending=False).copy()
-                df_abc["CA cumulé"] = df_abc["CA annuel"].cumsum()
-                df_abc["CA cumulé %"] = df_abc["CA cumulé"] / df_abc["CA annuel"].sum() * 100
-                
-                def assign_abc(row):
-                    if row["CA cumulé %"] <= 70:
-                        return "A (70% CA)", 2.33, "99%"
-                    elif row["CA cumulé %"] <= 90:
-                        return "B (20% CA)", 1.65, "95%"
-                    else:
-                        return "C (10% CA)", 1.28, "90%"
-                
-                df_abc[["Classe ABC", "Z", "Niveau service"]] = df_abc.apply(lambda r: pd.Series(assign_abc(r)), axis=1)
-                
-                # ✅ AFFICHAGE DE L'ANALYSE ABC
-                st.markdown("---")
-                st.markdown("#### 🏷️ Analyse ABC - répartition des produits")
-                
-                col1, col2, col3 = st.columns(3)
-                abc_counts = df_abc["Classe ABC"].value_counts()
-                
-                for classe in ["A (70% CA)", "B (20% CA)", "C (10% CA)"]:
-                    count = abc_counts.get(classe, 0)
-                    pct = (count / len(df_abc) * 100) if len(df_abc) > 0 else 0
-                    color = COLORS["danger"] if "A" in classe else COLORS["warning"] if "B" in classe else COLORS["success"]
-                    
-                    target = col1 if "A" in classe else col2 if "B" in classe else col3
-                    with target:
-                        st.markdown(f"""
-                        <div style='background:{color}15; border-left:3px solid {color}; padding:0.5rem 1rem; border-radius:8px'>
-                            <strong>{classe}</strong><br/>
-                            {count} produits ({pct:.1f}%)
-                        </div>
-                        """, unsafe_allow_html=True)
-                
-                # Calculs finaux
-                results = []
-                for _, row in df_abc.iterrows():
-                    conso_mensuelle = row["Conso moyenne/mois"]
-                    conso_annuelle = conso_mensuelle * 12
-                    cout_unitaire = row["Coût unitaire"]
-                    cout_passation = row["Coût passation"]
-                    taux_stockage = row["Taux stockage (%)"]
-                    source = row["Source"]
-                    z = row["Z"]
-                    ecart_type = row["Écart-type mensuel"]
-                    
-                    delay = SOURCE_DELAYS.get(source, SOURCE_DELAYS["Local"])
-                    lt_mois = delay["mois"]
-                    lt_jours = delay["jours"]
-                    variabilite = (ecart_type / conso_mensuelle) if conso_mensuelle > 0 else 0.15
-                    
-                    if conso_mensuelle > 0 and cout_unitaire > 0:
-                        ss = calc_ss(conso_mensuelle, z=z, lt_mois=lt_mois, variab=variabilite)
-                        eoq, nb_cmd, _ = calc_eoq(conso_annuelle, cout_unitaire, cout_passation, taux_stockage/100)
-                        pr = calc_pr(conso_mensuelle, lt_mois, ss)
-                        cout_ss = round(ss * cout_unitaire * (taux_stockage/100), 2)
-                        conso_journaliere = conso_mensuelle / 30
-                        ss_jours = round(ss / conso_journaliere, 1) if conso_journaliere > 0 else 0
-                    else:
-                        ss = eoq = pr = cout_ss = ss_jours = 0
-                        nb_cmd = 0
-                    
-                    results.append({
-                        "Code article": row["Code article"],
-                        "Article": row["Article"],
-                        "Source": source,
-                        "Délai (jours)": lt_jours,
-                        "Conso/mois": conso_mensuelle,
-                        "CV (%)": row["CV (%)"],
-                        "Classe ABC": row["Classe ABC"],
-                        "Niveau service": row["Niveau service"],
-                        "EOQ": eoq,
-                        "Stock sécurité": ss,
-                        "SS (jours)": ss_jours,
-                        "Point commande": pr,
-                        "Coût SS (TND/an)": cout_ss,
-                        "Nb cmd/an": round(nb_cmd, 1) if nb_cmd else 0
-                    })
-                
-                df_results = pd.DataFrame(results)
-                
-                # ✅ AFFICHAGE FINAL DES RÉSULTATS
-                st.markdown("---")
-                st.markdown("#### 📊 RÉSULTATS FINAUX - EOQ, Stock sécurité, Point de commande")
-                
-                st.dataframe(
-                    df_results,
-                    use_container_width=True,
-                    hide_index=True,
-                    column_config={
-                        "Conso/mois": st.column_config.NumberColumn("Conso/mois", format="%.1f"),
-                        "EOQ": st.column_config.NumberColumn("EOQ", format="%d"),
-                        "Stock sécurité": st.column_config.NumberColumn("Stock sécurité", format="%d"),
-                        "Point commande": st.column_config.NumberColumn("Point commande", format="%d"),
-                        "Coût SS (TND/an)": st.column_config.NumberColumn("Coût SS/an", format="%.2f"),
-                    }
-                )
-                
-                # KPIs
-                st.markdown("---")
-                st.markdown("#### 📈 Synthèse")
-                
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.metric("Produits traités", len(df_results))
-                with col2:
-                    st.metric("SS total", f"{fmtInt(df_results['Stock sécurité'].sum())} u")
-                with col3:
-                    st.metric("Coût SS annuel", f"{fmtInt(df_results['Coût SS (TND/an)'].sum())} TND")
-                with col4:
-                    st.metric("EOQ moyen", f"{fmtInt(df_results['EOQ'].mean())} u")
-                
-                # Graphique
-                st.markdown("---")
-                st.markdown("#### 📊 Visualisation")
-                
-                fig = go.Figure()
-                fig.add_trace(go.Bar(name="EOQ", x=df_results["Code article"].astype(str), 
-                                    y=df_results["EOQ"], marker_color=COLORS["primary"],
-                                    text=df_results["EOQ"].apply(lambda v: f"{int(v):,}" if v>0 else ""), 
-                                    textposition="outside"))
-                fig.add_trace(go.Bar(name="Stock sécurité", x=df_results["Code article"].astype(str), 
-                                    y=df_results["Stock sécurité"], marker_color=COLORS["secondary"],
-                                    text=df_results["Stock sécurité"].apply(lambda v: f"{int(v):,}"), 
-                                    textposition="outside"))
-                fig.add_trace(go.Scatter(name="Point commande", x=df_results["Code article"].astype(str), 
-                                        y=df_results["Point commande"], mode="markers+lines",
-                                        marker=dict(color=COLORS["danger"], size=9, symbol="diamond"),
-                                        line=dict(color=COLORS["danger"], width=2, dash="dash")))
-                fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                                height=400, barmode="group",
-                                xaxis=dict(title="Article", tickangle=-45),
-                                yaxis=dict(title="Unités"))
-                st.plotly_chart(fig, use_container_width=True)
-                
-                # Export
-                st.markdown("---")
-                st.markdown("#### 💾 Export")
-                
-                excel_buf = build_excel_complete_calculs(df_results, df_stats, df_abc)
-                st.download_button(
-                    label="⬇️ Télécharger le fichier Excel complet",
-                    data=excel_buf,
-                    file_name=f"medoil_supply_chain_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    type="primary"
-                )
-                
-                # Stockage
-                st.session_state['df_calculs'] = df_results
-                
-        except Exception as e:
-            st.error(f"Erreur lors du calcul: {e}")
+ 
+        st.markdown("---")
+        st.markdown("#### 💾 Export — tableau rempli")
+        st.info("Le fichier exporté reprend exactement le format de votre tableau d'origine avec toutes les colonnes calculées.")
+        st.download_button(
+            label="⬇️ Télécharger le tableau Excel rempli",
+            data=build_excel(df_res),
+            file_name="supply_chain_calculs.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            type="primary",
+        )
+ 
+ 
 # ─────────────────────────────────────────────────────────────────────────────
 def calculateurs():
     st.markdown("## ⚙️ Calculateurs Supply Chain")
@@ -705,7 +692,6 @@ def calculateurs():
         st.markdown(fbox("Formule","SS = Z × √(LT×σD² + D²×σLT²)",
                          "Z = facteur service · σD = écart-type demande · LT = délai (j)"), unsafe_allow_html=True)
  
-        # ── Import de données pour calcul automatique de σD ──────────────────
         st.markdown("##### 📂 Option : importer vos données de consommation")
         st.caption("Importez un fichier Excel avec une colonne de consommations historiques — σD sera calculé automatiquement.")
  
@@ -720,9 +706,8 @@ def calculateurs():
                 if num_cols:
                     col_chosen = st.selectbox("Colonne de consommation à utiliser", num_cols, key="ss_col")
                     series = df_up[col_chosen].dropna()
-                    sd_auto  = round(series.mean() / 30, 2)   # demande journalière
-                    ss2_auto = round(float(series.std()), 2)   # écart-type mensuel → converti en journalier
-                    # σD journalier = σ_mensuel / sqrt(30)
+                    sd_auto  = round(series.mean() / 30, 2)
+                    ss2_auto = round(float(series.std()), 2)
                     ss2_auto_daily = round(ss2_auto / math.sqrt(30), 2)
                     st.success(f"✅ Données importées — {len(series)} observations · Demande moy./j : **{sd_auto}** · σD journalier : **{ss2_auto_daily}**")
                 else:
@@ -739,12 +724,10 @@ def calculateurs():
         c1, c2, c3 = st.columns(3)
         with c1:
             sd  = st.number_input("Demande moy. (u/j)",    value=float(sd_auto) if sd_auto else 50.0, step=1.0)
-            ss2 = st.number_input("Écart-type demande σD (u/j)", value=float(ss2_auto_daily) if ss2_auto_daily else 8.0, step=0.5,
-                                  help="Calculé automatiquement si fichier importé, sinon saisissez manuellement")
+            ss2 = st.number_input("Écart-type demande σD (u/j)", value=float(ss2_auto_daily) if ss2_auto_daily else 8.0, step=0.5)
         with c2:
             slt = st.number_input("Délai fourni. (j)",     value=7.0,  step=1.0)
-            ssl = st.number_input("Écart-type délai σLT (j)", value=1.5, step=0.1,
-                                  help="Variabilité du délai fournisseur en jours")
+            ssl = st.number_input("Écart-type délai σLT (j)", value=1.5, step=0.1)
         with c3:
             Z_MAP_SS = {
                 "95% — Produits stratégiques":  1.65,
@@ -775,26 +758,25 @@ def calculateurs():
         st.markdown("---")
         c = st.columns(3)
         for i,(l,v,u,col) in enumerate([
-            ("SS (σD seul)",          fmtInt(SS1),       "unités", "#3b82f6"),
-            ("SS (formule complète)", fmtInt(SS2),       "unités", "#22c55e"),
-            ("Coût immobilisé SS",    fmtInt(SS2 * scu), "TND",    "#f59e0b"),
+            ("SS (σD seul)",          fmtInt(SS1),       "unités", C_GREEN),
+            ("SS (formule complète)", fmtInt(SS2),       "unités", C_GREEN2),
+            ("Coût immobilisé SS",    fmtInt(SS2 * scu), "TND",    C_GOLD),
         ]):
             with c[i]: st.markdown(mcard(l,v,u,color=col), unsafe_allow_html=True)
  
         st.markdown("<div style='margin-bottom:14px'></div>", unsafe_allow_html=True)
  
-        # Graphique sensibilité
         z_vals  = [0.84, 1.04, 1.28, 1.65, 1.88, 2.05, 2.33]
         ns_vals = [80, 85, 90, 95, 97, 98, 99]
         ss_v    = [round(z * math.sqrt(slt * ss2**2 + sd**2 * ssl**2)) for z in z_vals]
         current_pct = int(szo.split("%")[0])
         fig = go.Figure(go.Bar(
             x=[f"{n}%" for n in ns_vals], y=ss_v,
-            marker_color=["#22c55e" if n == current_pct else "#3b82f6" for n in ns_vals],
+            marker_color=[C_GOLD if n == current_pct else C_GREEN for n in ns_vals],
             text=ss_v, textposition="outside"))
-        fig.update_layout(**dark_layout(), height=260,
-            xaxis=dict(title="Niveau de service", gridcolor="rgba(255,255,255,.05)"),
-            yaxis=dict(title="SS (unités)",        gridcolor="rgba(255,255,255,.05)"))
+        fig.update_layout(**light_layout(), height=260,
+            xaxis=dict(title="Niveau de service", gridcolor="rgba(0,0,0,.06)"),
+            yaxis=dict(title="SS (unités)",        gridcolor="rgba(0,0,0,.06)"))
         st.plotly_chart(fig, use_container_width=True)
  
     with tab_eoq:
@@ -817,26 +799,26 @@ def calculateurs():
         Cp  = nb * eSc; Cs = (EOQ/2) * h
         st.markdown("---")
         c = st.columns(3)
-        data = [("EOQ",            fmtInt(EOQ),    "u/cmd", "#3b82f6"),
-                ("Nb cmd/an",      fmt(nb,1),      "cmds",  "#8892a4"),
-                ("Périodicité",    fmtInt(T),      "jours", "#8892a4"),
-                ("Coût passation/an", fmtInt(Cp),  "TND",   "#f59e0b"),
-                ("Coût stockage/an",  fmtInt(Cs),  "TND",   "#f59e0b"),
-                ("Coût total min.", fmtInt(Cp+Cs), "TND",   "#22c55e")]
+        data = [("EOQ",            fmtInt(EOQ),    "u/cmd", C_GREEN),
+                ("Nb cmd/an",      fmt(nb,1),      "cmds",  C_MUTED),
+                ("Périodicité",    fmtInt(T),      "jours", C_MUTED),
+                ("Coût passation/an", fmtInt(Cp),  "TND",   C_GOLD),
+                ("Coût stockage/an",  fmtInt(Cs),  "TND",   C_GOLD),
+                ("Coût total min.", fmtInt(Cp+Cs), "TND",   C_GREEN2)]
         for i,(l,v,u,col) in enumerate(data):
             with c[i%3]:
                 st.markdown(mcard(l,v,u,color=col), unsafe_allow_html=True)
                 st.markdown("<div style='margin-bottom:10px'></div>", unsafe_allow_html=True)
         qty_r = np.linspace(max(10, EOQ*.2), EOQ*2.5, 200)
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=qty_r, y=[(eD/q)*eSc for q in qty_r],            name="Passation", line=dict(color="#60a5fa",width=2)))
-        fig.add_trace(go.Scatter(x=qty_r, y=[(q/2)*h    for q in qty_r],             name="Stockage",  line=dict(color="#f59e0b",width=2)))
-        fig.add_trace(go.Scatter(x=qty_r, y=[(eD/q)*eSc+(q/2)*h for q in qty_r],    name="Total",     line=dict(color="#22c55e",width=2.5)))
-        fig.add_vline(x=EOQ, line_dash="dash", line_color="#ef4444",
-                      annotation_text=f"EOQ={fmtInt(EOQ)}", annotation_font_color="#ef4444")
-        fig.update_layout(**dark_layout(), height=300,
-            xaxis=dict(title="Quantité (u)", gridcolor="rgba(255,255,255,.05)"),
-            yaxis=dict(title="Coût/an (TND)",gridcolor="rgba(255,255,255,.05)"))
+        fig.add_trace(go.Scatter(x=qty_r, y=[(eD/q)*eSc for q in qty_r],            name="Passation", line=dict(color=C_GREEN,width=2)))
+        fig.add_trace(go.Scatter(x=qty_r, y=[(q/2)*h    for q in qty_r],             name="Stockage",  line=dict(color=C_GOLD,width=2)))
+        fig.add_trace(go.Scatter(x=qty_r, y=[(eD/q)*eSc+(q/2)*h for q in qty_r],    name="Total",     line=dict(color=C_GREEN2,width=2.5)))
+        fig.add_vline(x=EOQ, line_dash="dash", line_color=C_RED,
+                      annotation_text=f"EOQ={fmtInt(EOQ)}", annotation_font_color=C_RED)
+        fig.update_layout(**light_layout(), height=300,
+            xaxis=dict(title="Quantité (u)", gridcolor="rgba(0,0,0,.06)"),
+            yaxis=dict(title="Coût/an (TND)",gridcolor="rgba(0,0,0,.06)"))
         st.plotly_chart(fig, use_container_width=True)
  
     with tab_kpi:
@@ -858,12 +840,12 @@ def calculateurs():
         st.markdown("---")
         c = st.columns(3)
         kdata = [
-            ("Rotation",         fmt(rot,1)+"×",          "/an · >6×=excellent",  "#22c55e" if rot>=6 else "#f59e0b"),
-            ("Couverture",       fmtInt(cov)+"j",         "15–30j=optimal",        "#8892a4"),
-            ("Taux service OTD", fmt(srv,1)+"%",           ">95%=cible",           "#22c55e" if srv>=95 else "#f59e0b"),
-            ("Coût log/CA",      fmt(crt,1)+"%",           "objectif <8%",          "#22c55e" if crt<8 else "#ef4444"),
-            ("Coût stockage/an", fmtInt(kval*(ksh/100)),  "TND",                   "#f59e0b"),
-            ("DSI",              fmt(ks/(kv/365),0)+"j",  "jours de stock",        "#8892a4"),
+            ("Rotation",         fmt(rot,1)+"×",          "/an · >6×=excellent",  C_GREEN2 if rot>=6 else C_GOLD),
+            ("Couverture",       fmtInt(cov)+"j",         "15–30j=optimal",        C_MUTED),
+            ("Taux service OTD", fmt(srv,1)+"%",           ">95%=cible",           C_GREEN2 if srv>=95 else C_GOLD),
+            ("Coût log/CA",      fmt(crt,1)+"%",           "objectif <8%",          C_GREEN2 if crt<8 else C_RED),
+            ("Coût stockage/an", fmtInt(kval*(ksh/100)),  "TND",                   C_GOLD),
+            ("DSI",              fmt(ks/(kv/365),0)+"j",  "jours de stock",        C_MUTED),
         ]
         for i,(l,v,u,col) in enumerate(kdata):
             with c[i%3]:
@@ -893,11 +875,12 @@ def calculateurs():
             st.markdown(f"<div class='alert-ok'>🟢 Stock suffisant — {fmtInt(rcu)} u > PR ({fmtInt(PR)} u)</div>", unsafe_allow_html=True)
         c = st.columns(3)
         for i,(l,v,u,col) in enumerate([
-            ("Point de réappro.", fmtInt(PR),      "unités",             "#3b82f6"),
-            ("Jours restants",    fmt(dL,1),       "jours",              "#8892a4"),
-            ("Délai critique",    fmt(dL-rlt,1),   "jours avant urgence","#f59e0b"),
+            ("Point de réappro.", fmtInt(PR),      "unités",             C_GREEN),
+            ("Jours restants",    fmt(dL,1),       "jours",              C_MUTED),
+            ("Délai critique",    fmt(dL-rlt,1),   "jours avant urgence",C_GOLD),
         ]):
             with c[i]: st.markdown(mcard(l,v,u,color=col), unsafe_allow_html=True)
+ 
  
 # ─────────────────────────────────────────────────────────────────────────────
 def processus():
@@ -936,18 +919,18 @@ def processus():
     st.markdown("---")
     fg = go.Figure(go.Indicator(mode="gauge+number", value=round(gs,1),
         number={"suffix":"/100","font":{"color":col_c,"family":"DM Mono","size":28}},
-        gauge={"axis":{"range":[0,100]}, "bar":{"color":col_c,"thickness":.25}, "bgcolor":"#1e2535",
-               "steps":[{"range":[0,55],"color":"rgba(239,68,68,.2)"},{"range":[55,70],"color":"rgba(245,158,11,.2)"},
-                        {"range":[70,85],"color":"rgba(20,184,166,.2)"},{"range":[85,100],"color":"rgba(34,197,94,.2)"}]}))
-    fg.update_layout(paper_bgcolor="rgba(0,0,0,0)", font=dict(color="#8892a4",family="Syne"),
+        gauge={"axis":{"range":[0,100]}, "bar":{"color":col_c,"thickness":.25}, "bgcolor":"#f4f4ee",
+               "steps":[{"range":[0,55],"color":"rgba(220,53,53,.15)"},{"range":[55,70],"color":"rgba(245,197,24,.15)"},
+                        {"range":[70,85],"color":"rgba(74,140,63,.15)"},{"range":[85,100],"color":"rgba(45,106,45,.2)"}]}))
+    fg.update_layout(paper_bgcolor="rgba(0,0,0,0)", font=dict(color="#3d5c3d",family="Syne"),
                      height=220, margin=dict(t=10,b=10,l=20,r=20))
     cg,cd = st.columns([1,2])
     with cg: st.plotly_chart(fg, use_container_width=True)
     with cd:
-        st.markdown(f"<div style='background:#1e2535;border-left:4px solid {col_c};border-radius:10px;"
-                    f"padding:1.2rem 1.4rem;margin-top:1rem'>"
+        st.markdown(f"<div style='background:#ffffff;border-left:4px solid {col_c};border-radius:10px;"
+                    f"padding:1.2rem 1.4rem;margin-top:1rem;border:1px solid #d4e0d4'>"
                     f"<div style='font-size:1.2rem;font-weight:600;color:{col_c};margin-bottom:8px'>{lbl} — {pn}</div>"
-                    f"<div style='font-size:.85rem;color:#8892a4;line-height:1.6'>{adv}</div></div>",
+                    f"<div style='font-size:.85rem;color:#3d5c3d;line-height:1.6'>{adv}</div></div>",
                     unsafe_allow_html=True)
  
     st.markdown("---")
@@ -962,14 +945,14 @@ def processus():
         cc = sc(scr)
         with (c1 if i%2==0 else c2):
             st.markdown(
-                f"<div style='background:#1e2535;border:1px solid rgba(255,255,255,.08);border-radius:10px;"
-                f"padding:1rem;margin-bottom:10px'>"
+                f"<div style='background:#ffffff;border:1px solid #d4e0d4;border-radius:10px;"
+                f"padding:1rem;margin-bottom:10px;box-shadow:0 1px 4px rgba(26,61,26,.05)'>"
                 f"<div style='display:flex;justify-content:space-between;margin-bottom:8px'>"
-                f"<span style='font-size:.85rem;font-weight:600;color:#e8eaf0'>{nm}</span>"
-                f"<span style='font-family:\"DM Mono\",monospace;color:{cc}'>{scr:.1f}%</span></div>"
-                f"<div style='background:#0f1117;border-radius:4px;height:6px;overflow:hidden'>"
+                f"<span style='font-size:.85rem;font-weight:600;color:#1a2e1a'>{nm}</span>"
+                f"<span style='font-family:\"DM Mono\",monospace;color:{cc};font-weight:600'>{scr:.1f}%</span></div>"
+                f"<div style='background:#f4f4ee;border-radius:4px;height:6px;overflow:hidden'>"
                 f"<div style='background:{cc};height:100%;width:{scr}%'></div></div>"
-                f"<div style='font-size:.7rem;color:#5a6478;margin-top:6px'>{nt}</div></div>",
+                f"<div style='font-size:.7rem;color:#7a9a7a;margin-top:6px'>{nt}</div></div>",
                 unsafe_allow_html=True)
  
     if otd < 85: st.markdown(f"<div class='alert-warning'>⏱ OTD insuffisant ({otd:.1f}%) — Négocier des pénalités. Majorer le stock de sécurité.</div>", unsafe_allow_html=True)
@@ -981,10 +964,9 @@ def processus():
 # ─────────────────────────────────────────────────────────────────────────────
 def alertes():
     st.markdown("## 🔔 Alertes & Surveillance des stocks")
-    st.markdown("<p style='color:#8892a4'>Importez votre tableau de suivi — les alertes sont générées automatiquement</p>",
+    st.markdown("<p style='color:#7a9a7a'>Importez votre tableau de suivi — les alertes sont générées automatiquement</p>",
                 unsafe_allow_html=True)
  
-    # ── HELPER : nettoyer une valeur numérique (gère les virgules, espaces, #DIV/0!) ──
     def clean_num(v):
         if v is None: return 0.0
         s = str(v).strip().replace(" ", "").replace(",", ".")
@@ -992,7 +974,6 @@ def alertes():
         try: return float(s)
         except: return 0.0
  
-    # ── UPLOAD ───────────────────────────────────────────────────────────────
     uploaded = st.file_uploader(
         "📂 Déposez votre fichier Excel de suivi des stocks (.xlsx / .xls)",
         type=["xlsx", "xls"], key="alertes_upload")
@@ -1001,45 +982,22 @@ def alertes():
  
     if uploaded:
         try:
-            # 1. Lire tout le fichier sans charger les données pour avoir les noms des feuilles
-            excel_file = pd.ExcelFile(uploaded)
-            sheet_names = excel_file.sheet_names
-            
-            st.info(f"Fichier chargé : {len(sheet_names)} feuilles détectées.")
-            
-            # 2. Créer des onglets Streamlit dynamiquement
-            tabs = st.tabs(sheet_names)
-            
-            for i, sheet_name in enumerate(sheet_names):
-                with tabs[i]:
-                    st.subheader(f"Analyse de la feuille : {sheet_name}")
-                    
-                    # --- ÉTAPE DE LECTURE SPÉCIFIQUE ---
-                    # On relit la feuille pour trouver l'en-tête
-                    raw = pd.read_excel(uploaded, sheet_name=sheet_name, header=None)
-                    
-                    hrow = 0
-                    for idx, row in raw.iterrows():
-                        row_str = " ".join([str(v).lower() for v in row if pd.notna(v)])
-                        if any(k in row_str for k in ["codearticle", "article", "stock"]):
-                            hrow = idx
-                            break
-                    
-                    # Chargement final de la feuille en cours
-                    df_current = pd.read_excel(uploaded, sheet_name=sheet_name, header=hrow)
-                    
-                    # --- APPEL DE LA LOGIQUE DE TRAITEMENT ---
-                    # On passe le dataframe à une fonction de traitement
-                    process_and_display_alerts(df_current, sheet_name)
-
-        except Exception as e:
-            st.error(f"Erreur lors du traitement : {e}")
+            all_sheets = pd.read_excel(uploaded, sheet_name=None, header=None)
+            names = list(all_sheets.keys())
+            sel = names[0] if len(names) == 1 else st.selectbox("Choisir la feuille", names, key="alert_sheet")
+            raw = all_sheets[sel]
+ 
+            hrow = 0
+            for i, row in raw.iterrows():
+                row_str = " ".join([str(v).lower() for v in row if pd.notna(v)])
+                if any(k in row_str for k in ["codearticle", "article", "stock sécurité", "cons moy", "stk du jour"]):
+                    hrow = i
+                    break
  
             df_raw = pd.read_excel(uploaded, sheet_name=sel, header=hrow)
             df_raw.columns = [str(c).strip() for c in df_raw.columns]
             df_raw = df_raw.dropna(how="all")
  
-            # ── Mapping flexible des colonnes ─────────────────────────────
             cmap = {}
             for col in df_raw.columns:
                 cl = col.lower().strip()
@@ -1080,7 +1038,6 @@ def alertes():
  
             df_mapped = df_raw.rename(columns={v: k for k, v in cmap.items()})
  
-            # Colonnes numériques à nettoyer
             num_cols = ["Stock Sécurité", "Stock actuel", "Stk jour SS", "Cons Moy",
                         "Besoin M1", "Besoin M2", "Besoin M3",
                         "Stock M+1", "Stock M+2", "Stock M+3", "Commande en cours"]
@@ -1088,7 +1045,6 @@ def alertes():
                 if c in df_mapped.columns:
                     df_mapped[c] = df_mapped[c].apply(clean_num)
  
-            # Filtrer les lignes sans code article
             if "Code article" in df_mapped.columns:
                 df_mapped = df_mapped[df_mapped["Code article"].notna()]
                 df_mapped = df_mapped[df_mapped["Code article"].astype(str).str.strip() != ""]
@@ -1104,17 +1060,14 @@ def alertes():
         st.caption("Format attendu : Codearticle · article · Stock Sécurité · stk du jour tot · Cons Moy · couverture · besoin M1/M2/M3 · Stock M+1/M+2/M+3 · Commentaire")
         return
  
-    # ── GÉNÉRER LES ALERTES ──────────────────────────────────────────────────
     df = df_alertes.copy()
  
-    # Couverture en mois (depuis le fichier ou calculée)
     if "Couverture" not in df.columns or df["Couverture"].sum() == 0:
         df["Couverture"] = np.where(
             df.get("Cons Moy", pd.Series([0]*len(df))) > 0,
             (df.get("Stock actuel", pd.Series([0]*len(df))) / df["Cons Moy"]).round(1),
             np.nan)
  
-    # Statut basé sur couverture et Stock M+1/M+2/M+3
     def get_status(row):
         stk     = clean_num(row.get("Stock actuel", 0))
         ss      = clean_num(row.get("Stock Sécurité", 0))
@@ -1138,7 +1091,6 @@ def alertes():
  
     df["Statut"] = df.apply(get_status, axis=1)
  
-    # ── KPIs synthèse ────────────────────────────────────────────────────────
     rupt  = df[df["Statut"] == "🔴 Rupture imminente"]
     da    = df[df["Statut"].isin(["🟡 DA à lancer", "🟠 Risque M+3"])]
     ok    = df[df["Statut"] == "🟢 Normal"]
@@ -1146,16 +1098,14 @@ def alertes():
     st.markdown("---")
     st.markdown("#### 📊 Synthèse")
     c1, c2, c3, c4 = st.columns(4)
-    with c1: st.markdown(mcard("🔴 Rupture imminente",   str(len(rupt)), "articles à commander d'urgence", color="#ef4444"), unsafe_allow_html=True)
-    with c2: st.markdown(mcard("🟡 DA à lancer",         str(len(da)),   "articles nécessitant une DA",    color="#f59e0b"), unsafe_allow_html=True)
-    with c3: st.markdown(mcard("🟢 Normal",              str(len(ok)),   "articles en stock suffisant",    color="#22c55e"), unsafe_allow_html=True)
-    with c4: st.markdown(mcard("📦 Total articles",       str(len(df)),   "articles dans le fichier",       color="#3b82f6"), unsafe_allow_html=True)
+    with c1: st.markdown(mcard("🔴 Rupture imminente",   str(len(rupt)), "articles à commander d'urgence", color=C_RED),    unsafe_allow_html=True)
+    with c2: st.markdown(mcard("🟡 DA à lancer",         str(len(da)),   "articles nécessitant une DA",    color=C_GOLD),   unsafe_allow_html=True)
+    with c3: st.markdown(mcard("🟢 Normal",              str(len(ok)),   "articles en stock suffisant",    color=C_GREEN2), unsafe_allow_html=True)
+    with c4: st.markdown(mcard("📦 Total articles",       str(len(df)),   "articles dans le fichier",       color=C_GREEN),  unsafe_allow_html=True)
  
-    # ── TABLEAU COMPLET ──────────────────────────────────────────────────────
     st.markdown("---")
     st.markdown("#### 📋 Tableau de bord complet")
  
-    # Colonnes à afficher
     cols_display = ["Code article", "Désignation"]
     for c in ["Source", "UM", "Stock Sécurité", "Stock actuel", "Cons Moy",
               "Couverture", "Besoin M1", "Besoin M2", "Besoin M3",
@@ -1165,7 +1115,6 @@ def alertes():
  
     df_show = df[cols_display].copy()
  
-    # Filtre par statut
     filtre = st.multiselect(
         "Filtrer par statut",
         options=["🔴 Rupture imminente", "🟡 DA à lancer", "🟠 Risque M+3", "🟢 Normal"],
@@ -1184,33 +1133,31 @@ def alertes():
  
     st.dataframe(df_show, use_container_width=True, hide_index=True, column_config=col_cfg)
  
-    # ── GRAPHIQUE Stock actuel vs Stock Sécurité ─────────────────────────────
     if "Stock actuel" in df.columns and "Stock Sécurité" in df.columns:
         st.markdown("---")
         st.markdown("#### 📈 Stock actuel vs Stock de sécurité")
  
         labels = df["Code article"].astype(str).tolist()
-        colors = ["#ef4444" if s == "🔴 Rupture imminente"
-                  else "#f59e0b" if s in ("🟡 DA à lancer", "🟠 Risque M+3")
-                  else "#22c55e" for s in df["Statut"]]
+        colors = [C_RED if s == "🔴 Rupture imminente"
+                  else C_GOLD if s in ("🟡 DA à lancer", "🟠 Risque M+3")
+                  else C_GREEN2 for s in df["Statut"]]
  
         fig = go.Figure()
         fig.add_trace(go.Bar(name="Stock actuel", x=labels, y=df["Stock actuel"], marker_color=colors))
         fig.add_trace(go.Scatter(name="Stock Sécurité", x=labels, y=df["Stock Sécurité"],
-            mode="markers+lines", marker=dict(color="#a78bfa", size=7, symbol="diamond"),
-            line=dict(color="#a78bfa", width=1.5, dash="dash")))
+            mode="markers+lines", marker=dict(color=C_PURPLE, size=7, symbol="diamond"),
+            line=dict(color=C_PURPLE, width=1.5, dash="dash")))
         if "Stock M+1" in df.columns:
             fig.add_trace(go.Scatter(name="Stock M+1", x=labels, y=df["Stock M+1"],
-                mode="markers+lines", marker=dict(color="#60a5fa", size=6),
-                line=dict(color="#60a5fa", width=1.2, dash="dot")))
-        fig.update_layout(**dark_layout(), height=360, barmode="group",
-            xaxis=dict(tickangle=-45, gridcolor="rgba(255,255,255,.05)"),
-            yaxis=dict(title="Unités", gridcolor="rgba(255,255,255,.05)"),
+                mode="markers+lines", marker=dict(color=C_GREEN, size=6),
+                line=dict(color=C_GREEN, width=1.2, dash="dot")))
+        fig.update_layout(**light_layout(), height=360, barmode="group",
+            xaxis=dict(tickangle=-45, gridcolor="rgba(0,0,0,.06)"),
+            yaxis=dict(title="Unités", gridcolor="rgba(0,0,0,.06)"),
             shapes=[dict(type="line", x0=-0.5, x1=len(labels)-0.5, y0=0, y1=0,
-                         line=dict(color="#ef4444", width=1.5, dash="dash"))])
+                         line=dict(color=C_RED, width=1.5, dash="dash"))])
         st.plotly_chart(fig, use_container_width=True)
  
-    # ── ALERTES TEXTUELLES ───────────────────────────────────────────────────
     st.markdown("---")
     st.markdown("#### 🚨 Actions prioritaires")
  
@@ -1248,31 +1195,35 @@ def alertes():
             f"<span style='font-size:.85rem'>{detail}</span></div>",
             unsafe_allow_html=True)
  
+ 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
     URL_LOGO = "https://raw.githubusercontent.com/Ghofrane13/medoil-supply-app/main/logo.png"
     st.markdown(
     f"""
-    <div style="display: flex; align-items: center;">
-        <img src={URL_LOGO} style="width: 50px; margin-right: 10px;">
-        <h1 style="margin: 0;">Med oil</h1>
+    <div style="display: flex; align-items: center; padding: .3rem 0 .5rem">
+        <img src={URL_LOGO} style="width: 44px; margin-right: 10px; border-radius:6px">
+        <div>
+            <div style="color:#ffffff;font-weight:700;font-size:1.15rem;line-height:1.1">Med oil</div>
+            <div style="color:#f5c518;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase">Supply Chain · v2.0</div>
+        </div>
     </div>
     """,
     unsafe_allow_html=True
-)
+    )
     st.divider()
  
     pg = st.navigation([
-    st.Page(accueil,       title="Accueil",                   icon="🏠"),
-    st.Page(import_calcul, title="Import & Calcul automatique",icon="📥"),
-    st.Page(calculateurs,  title="Calculateurs",               icon="⚙️"),
-    st.Page(processus,     title="Processus fournisseurs",     icon="🏭"),
-    st.Page(alertes,       title="Alertes stock",              icon="🔔"),
-])
+        st.Page(accueil,       title="Accueil",                    icon="🏠"),
+        st.Page(import_calcul, title="Import & Calcul automatique", icon="📥"),
+        st.Page(calculateurs,  title="Calculateurs SC",             icon="⚙️"),
+        st.Page(processus,     title="Éval. Fournisseurs",          icon="🏭"),
+        st.Page(alertes,       title="Alertes & Stocks",            icon="🔔"),
+    ])
  
 with st.sidebar:
     st.divider()
-    st.markdown("<p style='color:#5a6478;font-size:.75rem;'>v2.0 · Supply Chain Manager</p>",
+    st.markdown("<p style='color:#4a6a4a;font-size:.72rem;'>© 2025 Medoil — Tous droits réservés</p>",
                 unsafe_allow_html=True)
  
 pg.run()
