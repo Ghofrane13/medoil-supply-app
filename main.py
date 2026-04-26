@@ -246,27 +246,9 @@ SOURCE_DELAIS = {
 def get_lt_jours(source):
     return SOURCE_DELAIS.get(source, 30)
 
-def calc_demande_moy_journaliere(conso_list):
-    """Calcule la demande moyenne journalière à partir d'une liste de consommations mensuelles."""
-    if not conso_list or len(conso_list) == 0:
-        return 0.0
-    return sum(conso_list) / (len(conso_list) * 30)
-
-def calc_sigma_d_journalier(conso_list):
-    """Calcule l'écart-type journalier de la demande."""
-    if not conso_list or len(conso_list) < 2:
-        return 0.0
-    monthly_daily = [c / 30 for c in conso_list]
-    return float(np.std(monthly_daily, ddof=1))
-
-def calc_ss_from_data(conso_list, source, z=1.65):
-    """Calcule le SS depuis données historiques."""
-    lt_j = get_lt_jours(source)
-    d_j  = calc_demande_moy_journaliere(conso_list)
-    sig_d = calc_sigma_d_journalier(conso_list)
-    sigma_lt = lt_j * 0.10  # 10% d'incertitude délai
-    ss = z * math.sqrt(lt_j * sig_d**2 + d_j**2 * sigma_lt**2)
-    return round(ss)
+def calc_ss(sigma_d, lt_j, z=1.65):
+    """SS = Z × σD × √L   (σD = écart-type demande, L = délai en jours)."""
+    return round(z * sigma_d * math.sqrt(lt_j))
 
 def calc_pr(d_j, lt_j, ss):
     return round(d_j * lt_j + ss)
@@ -648,11 +630,11 @@ def import_calcul():
 
             lt_j    = get_lt_jours(source)
             d_j     = conso / 30
-            # σD calculé directement depuis la consommation mensuelle unique
-            sig_d   = conso * 0.15 / 30   # 15% de variabilité sur conso mensuelle → quotidienne
-            sigma_lt = lt_j * 0.10
+            # σD = écart-type de la demande journalière (15% de variabilité)
+            sig_d   = conso * 0.15 / 30
 
-            ss      = round(Z * math.sqrt(lt_j * sig_d**2 + d_j**2 * sigma_lt**2))
+            # SS = Z × σD × √L
+            ss      = calc_ss(sig_d, lt_j, Z)
             pr      = calc_pr(d_j, lt_j, ss)
             conso_an = conso * 12
             eoq, nb_cmd, _ = calc_eoq(conso_an, cu, sc_cost=p_sc, taux=p_taux / 100)
@@ -782,8 +764,8 @@ def calculateurs():
         ["📦 Stock de sécurité", "📐 EOQ (Wilson)", "📊 KPIs stock", "🔄 Point de réappro."])
 
     with tab_ss:
-        st.markdown(fbox("Formule", "SS = Z × √(LT×σD² + D²×σLT²)",
-                         "Z = facteur service · σD = écart-type demande/j · LT = délai (j) · Délais : Export=120j · Local=14j · BM=21j"), unsafe_allow_html=True)
+        st.markdown(fbox("Formule", "SS = Z × σD × √L",
+                         "Z = facteur service · σD = écart-type demande (u/j) · L = délai (j) · Délais : Export=120j · Local=14j · BM=21j"), unsafe_allow_html=True)
 
         c1, c2, c3 = st.columns(3)
         with c1:
@@ -791,9 +773,8 @@ def calculateurs():
             lt_auto   = get_lt_jours(source_ss)
             st.info(f"Délai automatique : **{lt_auto} jours**")
             sd   = st.number_input("Demande moy. (u/j)",      value=50.0, step=1.0)
-            ss2  = st.number_input("Écart-type demande (u/j)", value=8.0,  step=0.5)
+            ss2  = st.number_input("Écart-type demande σD (u/j)", value=8.0,  step=0.5)
         with c2:
-            ssl  = st.number_input("Écart-type délai (j)",    value=lt_auto * 0.10, step=0.1)
             scu  = st.number_input("Coût unitaire (TND)",      value=25.0, step=1.0)
         with c3:
             Z_MAP_SS = {
@@ -803,21 +784,21 @@ def calculateurs():
             szo = st.selectbox("Niveau de service", list(Z_MAP_SS.keys()), index=0)
 
         Z2  = Z_MAP_SS[szo]
-        SS1 = Z2 * ss2 * math.sqrt(lt_auto)
-        SS2 = Z2 * math.sqrt(lt_auto * ss2**2 + sd**2 * ssl**2)
+        # SS = Z × σD × √L
+        SS_calc = Z2 * ss2 * math.sqrt(lt_auto)
 
         c = st.columns(3)
         for i, (l, v, u, col) in enumerate([
-            ("SS (σD seul)",          fmtInt(SS1),       "unités", C_GREEN),
-            ("SS (formule complète)", fmtInt(SS2),       "unités", C_GREEN2),
-            ("Coût immobilisé SS",    fmtInt(SS2 * scu), "TND",    C_GOLD),
+            ("SS calculé",         fmtInt(SS_calc),       "unités", C_GREEN),
+            ("Z × σD × √L",        f"{Z2} × {ss2} × √{lt_auto}", "détail calcul", C_GREEN2),
+            ("Coût immobilisé SS", fmtInt(SS_calc * scu), "TND",    C_GOLD),
         ]):
             with c[i]: st.markdown(mcard(l, v, u, color=col), unsafe_allow_html=True)
 
         st.markdown("<div style='margin-bottom:14px'></div>", unsafe_allow_html=True)
         z_vals  = [0.84, 1.04, 1.28, 1.65, 1.88, 2.05, 2.33]
         ns_vals = [80,   85,   90,   95,   97,   98,   99]
-        ss_v    = [round(z * math.sqrt(lt_auto * ss2**2 + sd**2 * ssl**2)) for z in z_vals]
+        ss_v    = [round(z * ss2 * math.sqrt(lt_auto)) for z in z_vals]
         current_pct = int(szo.replace("%", ""))
         fig = go.Figure(go.Bar(
             x=[f"{n}%" for n in ns_vals], y=ss_v,
@@ -1328,11 +1309,11 @@ with st.sidebar:
     st.divider()
 
     pg = st.navigation([
-        st.Page(accueil,         title="Accueil",               ),
-        st.Page(import_calcul,   title="Calcul automatique",    ),
-        st.Page(calculateurs,    title="Calculateurs SC",        ),
-        st.Page(alertes,         title="Alertes & Stocks",       ),
-        st.Page(evolution_gains, title="Évolution & Gains",      ),
+        st.Page(accueil,         title="Accueil",               icon="🏠"),
+        st.Page(import_calcul,   title="Calcul automatique",    icon="📥"),
+        st.Page(calculateurs,    title="Calculateurs SC",        icon="⚙️"),
+        st.Page(alertes,         title="Alertes & Stocks",       icon="🔔"),
+        st.Page(evolution_gains, title="Évolution & Gains",      icon="📈"),
     ])
 
 with st.sidebar:
