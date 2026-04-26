@@ -769,19 +769,19 @@ def calculateurs():
 
         c1, c2, c3 = st.columns(3)
         with c1:
-            source_ss = st.selectbox("Source approvisionnement", ["Export", "Local", "BM"])
+            source_ss = st.selectbox("Source approvisionnement", ["Export", "Local", "BM"], key="ss_source")
             lt_auto   = get_lt_jours(source_ss)
             st.info(f"Délai automatique : **{lt_auto} jours**")
-            sd   = st.number_input("Demande moy. (u/j)",      value=50.0, step=1.0)
-            ss2  = st.number_input("Écart-type demande σD (u/j)", value=8.0,  step=0.5)
+            sd   = st.number_input("Demande moy. (u/j)",          value=50.0, step=1.0, key="ss_sd")
+            ss2  = st.number_input("Écart-type demande σD (u/j)", value=8.0,  step=0.5, key="ss_sigma")
         with c2:
-            scu  = st.number_input("Coût unitaire (TND)",      value=25.0, step=1.0)
+            scu  = st.number_input("Coût unitaire (TND)",          value=25.0, step=1.0, key="ss_cu")
         with c3:
             Z_MAP_SS = {
                 "95%": 1.65, "96%": 1.75, "97%": 1.88, "98%": 2.05, "99%": 2.33,
                 "90%": 1.28, "85%": 1.04, "80%": 0.84,
             }
-            szo = st.selectbox("Niveau de service", list(Z_MAP_SS.keys()), index=0)
+            szo = st.selectbox("Niveau de service", list(Z_MAP_SS.keys()), index=0, key="ss_ns")
 
         Z2  = Z_MAP_SS[szo]
         # SS = Z × σD × √L
@@ -814,14 +814,14 @@ def calculateurs():
                          "D=demande annuelle · Sc=coût passation · Sh=taux stockage · Cu=coût unitaire"), unsafe_allow_html=True)
         c1, c2, c3 = st.columns(3)
         with c1:
-            eD  = st.number_input("Demande annuelle (u)", value=12000, step=100)
-            eSc = st.number_input("Coût passation (TND)", value=150.0, step=5.0)
+            eD  = st.number_input("Demande annuelle (u)", value=12000, step=100,  key="eoq_D")
+            eSc = st.number_input("Coût passation (TND)", value=150.0, step=5.0,  key="eoq_Sc")
         with c2:
-            eCu = st.number_input("Coût unitaire (TND)",  value=80.0,  step=1.0)
-            eSh = st.number_input("Taux stockage (%)",    value=20.0,  step=1.0)
+            eCu = st.number_input("Coût unitaire (TND)",  value=80.0,  step=1.0,  key="eoq_Cu")
+            eSh = st.number_input("Taux stockage (%)",    value=20.0,  step=1.0,  key="eoq_Sh")
         with c3:
-            eLT = st.number_input("Délai fourni. (j)",    value=10,    step=1)
-            eDy = st.number_input("Jours ouvr./an",       value=250,   step=1)
+            eLT = st.number_input("Délai fourni. (j)",    value=10,    step=1,    key="eoq_LT")
+            eDy = st.number_input("Jours ouvr./an",       value=250,   step=1,    key="eoq_Dy")
 
         h   = (eSh / 100) * eCu
         EOQ = math.sqrt(2 * eD * eSc / h) if h > 0 else 0
@@ -857,15 +857,15 @@ def calculateurs():
     with tab_kpi:
         c1, c2 = st.columns(2)
         with c1:
-            ks   = st.number_input("Stock moyen (u)",       value=3000,    step=100)
-            kv   = st.number_input("Ventes annuelles (u)",  value=18000,   step=100)
-            kval = st.number_input("Valeur stock (TND)",    value=240000,  step=1000)
-            kca  = st.number_input("CA annuel (TND)",       value=2400000, step=10000)
+            ks   = st.number_input("Stock moyen (u)",       value=3000,    step=100,   key="kpi_ks")
+            kv   = st.number_input("Ventes annuelles (u)",  value=18000,   step=100,   key="kpi_kv")
+            kval = st.number_input("Valeur stock (TND)",    value=240000,  step=1000,  key="kpi_kval")
+            kca  = st.number_input("CA annuel (TND)",       value=2400000, step=10000, key="kpi_kca")
         with c2:
-            kot  = st.number_input("Livrées à temps",       value=465,     step=1)
-            kto  = st.number_input("Total livrées",         value=490,     step=1)
-            klc  = st.number_input("Coût logistique (TND)", value=168000,  step=1000)
-            ksh  = st.number_input("Taux stockage (%)",     value=22.0,    step=1.0)
+            kot  = st.number_input("Livrées à temps",       value=465,     step=1,     key="kpi_kot")
+            kto  = st.number_input("Total livrées",         value=490,     step=1,     key="kpi_kto")
+            klc  = st.number_input("Coût logistique (TND)", value=168000,  step=1000,  key="kpi_klc")
+            ksh  = st.number_input("Taux stockage (%)",     value=22.0,    step=1.0,   key="kpi_ksh")
 
         rot = kv / ks if ks > 0 else 0
         cov = (ks / kv) * 365 if kv > 0 else 0
@@ -895,12 +895,12 @@ def calculateurs():
             src_rp = st.selectbox("Source", ["Export", "Local", "BM"], key="rp_src")
             lt_rp  = get_lt_jours(src_rp)
             st.info(f"Délai auto : **{lt_rp}j**")
-            rd  = st.number_input("Demande moy. (u/j)", value=50.0, step=1.0)
+            rd  = st.number_input("Demande moy. (u/j)", value=50.0, step=1.0,  key="rp_rd")
         with c2:
-            rss = st.number_input("Stock sécu. (u)",    value=132.0, step=10.0)
-            rcu = st.number_input("Stock actuel (u)",   value=500.0, step=10.0)
+            rss = st.number_input("Stock sécu. (u)",    value=132.0, step=10.0, key="rp_rss")
+            rcu = st.number_input("Stock actuel (u)",   value=500.0, step=10.0, key="rp_rcu")
         with c3:
-            rdm  = st.number_input("Demande max (u/j)", value=70.0,  step=1.0)
+            rdm  = st.number_input("Demande max (u/j)", value=70.0,  step=1.0,  key="rp_rdm")
 
         PR = rd * lt_rp + rss
         dL = (rcu - rss) / rd if rd > 0 else 0
