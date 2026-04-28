@@ -1885,6 +1885,9 @@ with st.sidebar:
         st.Page(evolution_gains, title="Évolution & Gains",      icon=":material/trending_up:"),
     ])
 
+    st.markdown("<p style='color:#4a6a4a;font-size:.72rem;'>© 2025 Medoil — Tous droits réservés</p>",
+                unsafe_allow_html=True)
+
 
 
 pg.run()
