@@ -11,7 +11,22 @@ from openpyxl.utils import get_column_letter
 from datetime import datetime, date
 import calendar
 
-st.set_page_config(page_title="MedOil SC", page_icon="🌿", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="MedOil SC", page_icon="🍃", layout="wide", initial_sidebar_state="expanded")
+
+# Inject Bootstrap Icons CDN — must be first, before any other st.markdown
+st.markdown("""
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+/* Bootstrap Icons sizing helpers */
+.bi { display:inline-block; vertical-align:-.125em; line-height:1; }
+.bi-sm  { font-size:.85rem; }
+.bi-md  { font-size:1.1rem; }
+.bi-lg  { font-size:1.4rem; }
+.bi-xl  { font-size:1.9rem; }
+.bi-2x  { font-size:2.2rem; }
+</style>
+""", unsafe_allow_html=True)
 
 st.markdown("""
 <style>
@@ -96,7 +111,9 @@ h1, h2, h3, h4 { color: var(--text-dark) !important; }
     padding: 1rem 1.2rem;
     margin-bottom: .7rem;
     color: #8b1a1a;
+    display:flex; align-items:flex-start; gap:.7rem;
 }
+.alert-critical .alert-icon { color:#dc3535; font-size:1.15rem; margin-top:2px; flex-shrink:0; }
 .alert-warning {
     background: rgba(245,197,24,.1);
     border: 1px solid rgba(200,160,0,.3);
@@ -105,7 +122,9 @@ h1, h2, h3, h4 { color: var(--text-dark) !important; }
     padding: 1rem 1.2rem;
     margin-bottom: .7rem;
     color: #7a5c00;
+    display:flex; align-items:flex-start; gap:.7rem;
 }
+.alert-warning .alert-icon { color:#c9a000; font-size:1.15rem; margin-top:2px; flex-shrink:0; }
 .alert-ok {
     background: rgba(74,140,63,.08);
     border: 1px solid rgba(74,140,63,.3);
@@ -114,7 +133,9 @@ h1, h2, h3, h4 { color: var(--text-dark) !important; }
     padding: 1rem 1.2rem;
     margin-bottom: .7rem;
     color: var(--green-mid);
+    display:flex; align-items:flex-start; gap:.7rem;
 }
+.alert-ok .alert-icon { color:var(--green-light); font-size:1.15rem; margin-top:2px; flex-shrink:0; }
 .alert-info {
     background: rgba(45,106,45,.07);
     border: 1px solid rgba(45,106,45,.25);
@@ -123,7 +144,9 @@ h1, h2, h3, h4 { color: var(--text-dark) !important; }
     padding: 1rem 1.2rem;
     margin-bottom: .7rem;
     color: var(--text-mid);
+    display:flex; align-items:flex-start; gap:.7rem;
 }
+.alert-info .alert-icon { color:var(--green-mid); font-size:1.15rem; margin-top:2px; flex-shrink:0; }
 
 .stSelectbox > div > div,
 .stNumberInput > div > div > input,
@@ -217,18 +240,21 @@ def fmtInt(n):
     if n is None or (isinstance(n, float) and (math.isnan(n) or math.isinf(n))): return "—"
     return f"{round(n):,}"
 
-def mcard(label, value, unit, delta=None, color="#2d6a2d"):
+def mcard(label, value, unit, delta=None, color="#2d6a2d", icon="bi-bar-chart-fill"):
     dh = f"<div style='font-size:.7rem;color:{color};margin-top:4px'>{delta}</div>" if delta else ""
     return f"""<div style='background:#ffffff;border:1px solid #d4e0d4;border-radius:12px;
         padding:1rem 1.2rem;text-align:center;border-top:3px solid {color};
         box-shadow:0 2px 8px rgba(26,61,26,.06)'>
-        <div style='font-size:.65rem;color:#7a9a7a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.4rem'>{label}</div>
+        <div style='font-size:1.3rem;color:{color};margin-bottom:.3rem'>
+            <i class="bi {icon}"></i></div>
+        <div style='font-size:.62rem;color:#7a9a7a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.4rem'>{label}</div>
         <div style='font-family:"DM Mono",monospace;font-size:1.6rem;font-weight:500;color:#1a2e1a'>{value}</div>
         <div style='font-size:.68rem;color:#7a9a7a;margin-top:3px'>{unit}</div>{dh}</div>"""
 
-def fbox(title, formula, details):
+def fbox(title, formula, details, icon="bi-calculator"):
     return (f"<div class='formula-box'>"
-            f"<div style='font-size:.65rem;color:#7a9a7a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px'>{title}</div>"
+            f"<div style='font-size:.62rem;color:#7a9a7a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px'>"
+            f"<i class='bi {icon}' style='margin-right:5px;color:#4a8c3f'></i>{title}</div>"
             f"<span class='f-eq'>{formula}</span><br/>"
             f"<span style='color:#7a9a7a'>{details}</span></div>")
 
@@ -436,7 +462,7 @@ def accueil():
              background:radial-gradient(circle,rgba(245,197,24,.12),transparent 70%);border-radius:50%'></div>
         <div style='font-size:.7rem;color:#f5c518;letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px;
              background:rgba(245,197,24,.15);display:inline-block;padding:.3rem .8rem;border-radius:20px;
-             border:1px solid rgba(245,197,24,.3)'>✦ Outil supply chain manager · v3.0</div>
+             border:1px solid rgba(245,197,24,.3)'><i class="bi bi-stars"></i> Outil supply chain manager · v3.0</div>
         <h1 style='font-family:"DM Serif Display",serif;font-size:2.3rem;color:#ffffff;margin:.4rem 0;line-height:1.25'>
             Pilotez votre <em style='color:#f5c518'>supply chain</em><br/>avec précision</h1>
         <p style='color:#a5c8a5;font-size:.95rem;margin:.8rem 0 1.4rem'>
@@ -446,17 +472,17 @@ def accueil():
     st.markdown("""
     <div style='display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem'>
         <div style='background:#ffffff;border:1px solid #d4e0d4;border-radius:12px;padding:1.2rem 1.4rem;border-top:3px solid #2d6a2d'>
-            <div style='font-size:.72rem;color:#7a9a7a;text-transform:uppercase;margin-bottom:.5rem'>🕐 Délai Export</div>
+            <div style='font-size:.72rem;color:#7a9a7a;text-transform:uppercase;margin-bottom:.5rem'><i class="bi bi-clock-history" style="color:#7a9a7a"></i> Délai Export</div>
             <div style='font-size:1.6rem;font-weight:700;color:#1a2e1a;font-family:"DM Mono",monospace'>4 mois</div>
             <div style='font-size:.75rem;color:#7a9a7a'>Approvisionnement international</div>
         </div>
         <div style='background:#ffffff;border:1px solid #d4e0d4;border-radius:12px;padding:1.2rem 1.4rem;border-top:3px solid #f5c518'>
-            <div style='font-size:.72rem;color:#7a9a7a;text-transform:uppercase;margin-bottom:.5rem'>🕐 Délai Local</div>
+            <div style='font-size:.72rem;color:#7a9a7a;text-transform:uppercase;margin-bottom:.5rem'><i class="bi bi-clock-history" style="color:#7a9a7a"></i> Délai Local</div>
             <div style='font-size:1.6rem;font-weight:700;color:#1a2e1a;font-family:"DM Mono",monospace'>2 semaines</div>
             <div style='font-size:.75rem;color:#7a9a7a'>Fournisseurs locaux</div>
         </div>
         <div style='background:#ffffff;border:1px solid #d4e0d4;border-radius:12px;padding:1.2rem 1.4rem;border-top:3px solid #4a8c3f'>
-            <div style='font-size:.72rem;color:#7a9a7a;text-transform:uppercase;margin-bottom:.5rem'>🕐 Délai BM</div>
+            <div style='font-size:.72rem;color:#7a9a7a;text-transform:uppercase;margin-bottom:.5rem'><i class="bi bi-clock-history" style="color:#7a9a7a"></i> Délai BM</div>
             <div style='font-size:1.6rem;font-weight:700;color:#1a2e1a;font-family:"DM Mono",monospace'>3 semaines</div>
             <div style='font-size:.75rem;color:#7a9a7a'>Bureau de marché</div>
         </div>
@@ -465,10 +491,10 @@ def accueil():
     st.markdown("<div style='font-size:1rem;font-weight:700;color:#1a2e1a;margin-bottom:1rem;border-left:3px solid #f5c518;padding-left:10px'>Modules disponibles</div>", unsafe_allow_html=True)
     cols = st.columns(4)
     mods = [
-        ("📥", "#2d6a2d", "Calcul automatique",   "Importez consommations 12 mois → SS · EOQ · ABC/XYZ → Export XLSX"),
-        ("⚙️", "#c9a000", "Calculateurs SC",        "EOQ · SS · KPIs · Point de réappro. avec courbes"),
-        ("🔔", "#dc3535", "Alertes & Stocks",        "Alertes rupture SS · Déclenchement commandes automatique"),
-        ("📈", "#4a8c3f", "Évolution & Gains",       "Suivi SS · saisie par code · évaluation économies réalisées"),
+        ("<i class='bi bi-upload bi-xl' style='color:#2d6a2d'></i>", "#2d6a2d", "Calcul automatique",   "Importez consommations 12 mois → SS · EOQ · ABC/XYZ → Export XLSX"),
+        ("<i class='bi bi-sliders bi-xl' style='color:#c9a000'></i>", "#c9a000", "Calculateurs SC",        "EOQ · SS · KPIs · Point de réappro. avec courbes"),
+        ("<i class='bi bi-bell-fill bi-xl' style='color:#dc3535'></i>", "#dc3535", "Alertes & Stocks",        "Alertes rupture SS · Déclenchement commandes automatique"),
+        ("<i class='bi bi-graph-up-arrow bi-xl' style='color:#4a8c3f'></i>", "#4a8c3f", "Évolution & Gains",       "Suivi SS · saisie par code · évaluation économies réalisées"),
     ]
     for col, (ic, accent, ti, de) in zip(cols, mods):
         with col:
@@ -480,14 +506,14 @@ def accueil():
                 f"<div style='font-size:.78rem;color:#7a9a7a;line-height:1.55'>{de}</div></div>",
                 unsafe_allow_html=True)
     st.divider()
-    st.info("💡 **Flux recommandé :** Calcul automatique → Export XLSX → Import dans Alertes & Stocks")
+    st.info("**Flux recommandé :** Calcul automatique → Export XLSX → Import dans Alertes &amp; Stocks")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PAGE : CALCUL AUTOMATIQUE
 # ═══════════════════════════════════════════════════════════════════════════════
 def import_calcul():
-    st.markdown("## 📥 Calcul automatique — Stock de sécurité & EOQ")
+    st.markdown('<h2><i class="bi bi-cloud-upload" style="color:#2d6a2d;margin-right:10px"></i>Calcul automatique — Stock de sécurité &amp; EOQ</h2>', unsafe_allow_html=True)
     st.markdown(
         "<p style='color:#7a9a7a'>Importez votre tableau de consommations 12 mois — "
         "σD, demande moyenne, classification ABC/XYZ et indicateurs SC calculés automatiquement "
@@ -515,7 +541,7 @@ def import_calcul():
 </div>
 """, unsafe_allow_html=True)
 
-    with st.expander("📋 Format attendu du fichier Excel"):
+    with st.expander("Format attendu du fichier Excel"):
         st.markdown("""
 **Le fichier peut avoir 1 ou 2 feuilles — l'application traite chaque feuille séparément.**
 
@@ -531,7 +557,7 @@ def import_calcul():
 """)
 
     st.divider()
-    st.markdown("#### 📂 Chargement du fichier")
+    st.markdown('<h4><i class="bi bi-folder2-open" style="color:#2d6a2d;margin-right:8px"></i>Chargement du fichier</h4>', unsafe_allow_html=True)
     uploaded = st.file_uploader("Déposez votre fichier Excel (.xlsx / .xls)",
                                  type=["xlsx", "xls"], key="ic_upload")
     use_demo = st.checkbox("Utiliser les données de démo", value=not bool(uploaded), key="ic_demo")
@@ -544,7 +570,7 @@ def import_calcul():
             sheet_names = list(all_raw.keys())
 
             if len(sheet_names) > 1:
-                st.info(f"📋 **{len(sheet_names)} feuilles détectées :** {', '.join(sheet_names)}")
+                st.info(f" **{len(sheet_names)} feuilles détectées :** {', '.join(sheet_names)}")
                 feuille_active    = st.radio("Feuille à analyser", sheet_names,
                                              horizontal=True, key="ic_sheet_sel")
                 sheets_to_process = [feuille_active]
@@ -591,7 +617,7 @@ def import_calcul():
 
                 df_s.attrs["month_cols"] = month_cols
                 all_sheets_data[sheet_sel] = df_s
-                st.success(f"✅ Feuille **{sheet_sel}** : {len(df_s)} articles · "
+                st.success(f"Feuille **{sheet_sel}** : {len(df_s)} articles · "
                            f"{len(month_cols)} mois ({', '.join(month_cols[:3])}{'…' if len(month_cols)>3 else ''})")
 
         except Exception as e:
@@ -617,7 +643,7 @@ def import_calcul():
         })
         demo.attrs["month_cols"] = [f"M{i+1}" for i in range(12)]
         all_sheets_data["Démo"] = demo
-        st.info("📊 Données de démo chargées — 10 articles · 12 mois · coûts individuels inclus")
+        st.info("Données de démo chargées — 10 articles · 12 mois · coûts individuels inclus")
 
     if not all_sheets_data:
         return
@@ -627,12 +653,12 @@ def import_calcul():
     # ═══════════════════════════════════════════════════════════════════════════
     for sheet_name, df_source in all_sheets_data.items():
         if len(all_sheets_data) > 1:
-            st.markdown(f"---\n### 📄 Feuille : **{sheet_name}**")
+            st.markdown(f"---\n### <i class='bi bi-file-earmark-spreadsheet' style='color:#2d6a2d'></i> Feuille : <strong>{sheet_name}</strong>")
 
         month_cols = df_source.attrs.get("month_cols", [])
 
         # ── Aperçu du tableau importé ─────────────────────────────────────────
-        with st.expander(f"👁 Tableau importé — {sheet_name}", expanded=True):
+        with st.expander(f"Tableau importé — {sheet_name}", expanded=True):
             disp_cols = (["Code article","Description Article","Source","Coût unitaire",
                           "Coût passation","Taux stockage"]
                          + month_cols
@@ -650,7 +676,7 @@ def import_calcul():
             if need_cu: missing.append("Coût unitaire")
             if need_sc: missing.append("Coût passation")
             if need_tx: missing.append("Taux stockage (%)")
-            st.warning(f"⚠️ Colonnes absentes ou nulles : **{', '.join(missing)}** — saisissez les valeurs dans le tableau ci-dessous :")
+            st.warning(f"Colonnes absentes ou nulles : **{', '.join(missing)}** — saisissez les valeurs dans le tableau ci-dessous :")
 
             # Construction tableau de saisie interactif
             saisie_data = []
@@ -781,7 +807,7 @@ def import_calcul():
         # SECTION 1 — ANALYSE STATISTIQUE
         # ════════════════════════════════════════════════════════════════════
         st.divider()
-        st.markdown("### 📊 Analyse des consommations — synthèse par article")
+        st.markdown('<h3><i class="bi bi-table" style="color:#2d6a2d;margin-right:8px"></i>Analyse des consommations</h3>', unsafe_allow_html=True)
 
         abc_badge = {"A":"<span style='background:#2d6a2d;color:#fff;padding:2px 8px;border-radius:4px;font-weight:700'>A</span>",
                      "B":"<span style='background:#c9a000;color:#fff;padding:2px 8px;border-radius:4px;font-weight:700'>B</span>",
@@ -833,7 +859,7 @@ def import_calcul():
         # SECTION 2 — DÉTAIL PAR ARTICLE
         # ════════════════════════════════════════════════════════════════════
         st.divider()
-        st.markdown("### 🔍 Détail par article")
+        st.markdown('<h3><i class="bi bi-search" style="color:#2d6a2d;margin-right:8px"></i>Détail par article</h3>', unsafe_allow_html=True)
 
         art_labels = [
             f"{row['Code article']} — {row['Description Article']} [{row['Classe']}]"
@@ -868,31 +894,31 @@ def import_calcul():
 
         # Ligne 1 — Stats demande
         c1,c2,c3,c4,c5 = st.columns(5)
-        with c1: st.markdown(mcard("Demande moy./mois", fmt(art["Conso mois moy"],1), "u/mois", color=C_GREEN),  unsafe_allow_html=True)
-        with c2: st.markdown(mcard("Demande moy./jour", fmt(art["D jour"],3),         "u/j",    color=C_GREEN2), unsafe_allow_html=True)
-        with c3: st.markdown(mcard("σ mensuelle",       fmt(art["Sigma mois"],2),     "u/mois", color=C_PURPLE), unsafe_allow_html=True)
-        with c4: st.markdown(mcard("σ journalière",     fmt(art["Sigma D (j)"],4),    "u/j",    color=C_PURPLE), unsafe_allow_html=True)
-        with c5: st.markdown(mcard("Coeff. variation",  f"{art['CV']*100:.1f}%",      "CV",     color=xyz_col),  unsafe_allow_html=True)
+        with c1: st.markdown(mcard("Demande moy./mois",   fmt(art["Conso mois moy"],1), "u/mois", color=C_GREEN,  icon="bi-graph-down"),  unsafe_allow_html=True)
+        with c2: st.markdown(mcard("Demande moy./jour",   fmt(art["D jour"],3),         "u/j",    color=C_GREEN2, icon="bi-activity"), unsafe_allow_html=True)
+        with c3: st.markdown(mcard("σ mensuelle",         fmt(art["Sigma mois"],2),     "u/mois", color=C_PURPLE, icon="bi-distribute-vertical"), unsafe_allow_html=True)
+        with c4: st.markdown(mcard("σ journalière",       fmt(art["Sigma D (j)"],4),    "u/j",    color=C_PURPLE, icon="bi-distribute-vertical"), unsafe_allow_html=True)
+        with c5: st.markdown(mcard("Coeff. variation",  f"{art['CV']*100:.1f}%",      "CV",     color=xyz_col, icon="bi-percent"), unsafe_allow_html=True)
 
         st.markdown("<div style='margin-bottom:.8rem'></div>", unsafe_allow_html=True)
 
         # Ligne 2 — Paramètres article
         c1,c2,c3,c4,c5 = st.columns(5)
-        with c1: st.markdown(mcard("Coût unitaire",    fmt(art["Coût unitaire"],4),     "TND/u",  color=C_MUTED),  unsafe_allow_html=True)
-        with c2: st.markdown(mcard("Coût passation",   fmt(art["Cout passation art"],1),"TND/cmd",color=C_MUTED),  unsafe_allow_html=True)
-        with c3: st.markdown(mcard("Taux stockage",    f"{art['Taux stockage art']*100:.1f}%", "%/an", color=C_MUTED), unsafe_allow_html=True)
-        with c4: st.markdown(mcard("Niveau de service",art["Niveau service txt"],       f"Z={art['Z val']}", color=abc_col), unsafe_allow_html=True)
-        with c5: st.markdown(mcard("Valeur annuelle",  f"{art['Valeur annuelle']:,.0f}","TND/an", color=C_GREEN2), unsafe_allow_html=True)
+        with c1: st.markdown(mcard("Coût unitaire",       fmt(art["Coût unitaire"],4),     "TND/u",  color=C_MUTED,  icon="bi-tag"),    unsafe_allow_html=True)
+        with c2: st.markdown(mcard("Coût passation",      fmt(art["Cout passation art"],1),"TND/cmd",color=C_MUTED,  icon="bi-receipt"),  unsafe_allow_html=True)
+        with c3: st.markdown(mcard("Taux stockage",    f"{art['Taux stockage art']*100:.1f}%", "%/an", color=C_MUTED, icon="bi-percent"), unsafe_allow_html=True)
+        with c4: st.markdown(mcard("Niveau de service",   art["Niveau service txt"],       f"Z={art['Z val']}",  color=abc_col, icon="bi-shield-check"), unsafe_allow_html=True)
+        with c5: st.markdown(mcard("Valeur annuelle",  f"{art['Valeur annuelle']:,.0f}","TND/an", color=C_GREEN2, icon="bi-cash-stack"), unsafe_allow_html=True)
 
         st.markdown("<div style='margin-bottom:.8rem'></div>", unsafe_allow_html=True)
 
         # Ligne 3 — Indicateurs SC
         c1,c2,c3,c4,c5 = st.columns(5)
-        with c1: st.markdown(mcard("Stock de sécurité",fmtInt(art["Stock sécurité"]),  "unités",  color=C_GOLD),   unsafe_allow_html=True)
-        with c2: st.markdown(mcard("Point de commande",fmtInt(art["Point de commande"]),"unités",  color=C_RED),    unsafe_allow_html=True)
-        with c3: st.markdown(mcard("EOQ",              fmtInt(art["EOQ"]),             "u/cmd",   color=C_GREEN),  unsafe_allow_html=True)
-        with c4: st.markdown(mcard("Coût SS",          f"{art['Coût SS']:,.2f}",       "TND",     color=C_GOLD),   unsafe_allow_html=True)
-        with c5: st.markdown(mcard("Nb cmd/an",        fmt(art["Nb cmd an"],1),        "cmd/an",  color=C_GREEN2), unsafe_allow_html=True)
+        with c1: st.markdown(mcard("Stock de sécurité",   fmtInt(art["Stock sécurité"]),  "unités",  color=C_GOLD,   icon="bi-shield-fill-check"),   unsafe_allow_html=True)
+        with c2: st.markdown(mcard("Point de commande",   fmtInt(art["Point de commande"]),"unités",  color=C_RED,    icon="bi-flag-fill"),    unsafe_allow_html=True)
+        with c3: st.markdown(mcard("EOQ",                 fmtInt(art["EOQ"]),             "u/cmd",   color=C_GREEN,  icon="bi-arrow-repeat"),  unsafe_allow_html=True)
+        with c4: st.markdown(mcard("Coût SS",          f"{art['Coût SS']:,.2f}",       "TND",     color=C_GOLD, icon="bi-wallet2"), unsafe_allow_html=True)
+        with c5: st.markdown(mcard("Nb cmd/an",           fmt(art["Nb cmd an"],1),        "cmd/an",  color=C_GREEN2, icon="bi-cart"), unsafe_allow_html=True)
 
         st.markdown("<div style='margin-bottom:.8rem'></div>", unsafe_allow_html=True)
 
@@ -935,7 +961,7 @@ def import_calcul():
         # SECTION 3 — TABLEAU SC COMPLET
         # ════════════════════════════════════════════════════════════════════
         st.divider()
-        st.markdown("### 🧮 Indicateurs SC — tous articles")
+        st.markdown('<h3><i class="bi bi-grid-3x3-gap-fill" style="color:#2d6a2d;margin-right:8px"></i>Indicateurs SC — tous articles</h3>', unsafe_allow_html=True)
 
         disp_sc = df_res[[
             "Code article","Description Article","Source","Classe",
@@ -984,23 +1010,23 @@ def import_calcul():
         st.divider()
         c1,c2,c3,c4 = st.columns(4)
         n_A = (df_res["Classe ABC"]=="A").sum()
-        with c1: st.markdown(mcard("Articles traités", str(len(df_res)), "articles",         color=C_GREEN),  unsafe_allow_html=True)
-        with c2: st.markdown(mcard("Coût total SS",    f"{df_res['Coût SS'].sum():,.0f}", "TND immobilisés", color=C_GOLD),   unsafe_allow_html=True)
-        with c3: st.markdown(mcard("EOQ moyen",        fmtInt(df_res[df_res['EOQ']>0]['EOQ'].mean()), "u/cmd", color=C_GREEN2), unsafe_allow_html=True)
-        with c4: st.markdown(mcard("Articles classe A", str(n_A), f"/ {len(df_res)} → NS 99%", color=C_GREEN), unsafe_allow_html=True)
+        with c1: st.markdown(mcard("Articles traités",    str(len(df_res)), "articles",         color=C_GREEN,  icon="bi-boxes"),  unsafe_allow_html=True)
+        with c2: st.markdown(mcard("Coût total SS",       f"{df_res['Coût SS'].sum():,.0f}", "TND immobilisés", color=C_GOLD,   icon="bi-currency-exchange"),   unsafe_allow_html=True)
+        with c3: st.markdown(mcard("EOQ moyen",           fmtInt(df_res[df_res['EOQ']>0]['EOQ'].mean()), "u/cmd", color=C_GREEN2, icon="bi-arrow-repeat"), unsafe_allow_html=True)
+        with c4: st.markdown(mcard("Articles classe A",   str(n_A), f"/ {len(df_res)} → NS 99%", color=C_GREEN, icon="bi-star-fill"), unsafe_allow_html=True)
 
         # ════════════════════════════════════════════════════════════════════
         # SECTION 4 — EXPORT
         # ════════════════════════════════════════════════════════════════════
         st.divider()
-        st.markdown("### 💾 Export XLSX — Indicateurs SC")
+        st.markdown('<h3><i class="bi bi-file-earmark-excel-fill" style="color:#217346;margin-right:8px"></i>Export XLSX — Indicateurs SC</h3>', unsafe_allow_html=True)
         st.info("Le fichier contient les indicateurs calculés avec classification ABC/XYZ, "
                 "niveaux de service automatiques et coûts propres à chaque article.")
 
         df_exp = df_res.drop(columns=["_conso_mois","Valeur annuelle"], errors="ignore")
         buf    = build_excel_indicateurs(df_exp)
         st.download_button(
-            label="⬇️ Télécharger le fichier Excel",
+            label="Télécharger le fichier Excel",
             data=buf,
             file_name=f"medoil_indicateurs_{sheet_name}_{date.today()}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -1014,13 +1040,14 @@ def import_calcul():
 
 # ─────────────────────────────────────────────────────────────────────────────
 def calculateurs():
-    st.markdown("## ⚙️ Calculateurs Supply Chain")
+    st.markdown('<h2><i class="bi bi-sliders" style="color:#2d6a2d;margin-right:10px"></i>Calculateurs Supply Chain</h2>', unsafe_allow_html=True)
     tab_ss, tab_eoq, tab_kpi, tab_rp = st.tabs(
-        ["📦 Stock de sécurité", "📐 EOQ (Wilson)", "📊 KPIs stock", "🔄 Point de réappro."])
+        ["Stock de sécurité", "EOQ (Wilson)", "KPIs stock", "Point de réappro."])
 
     with tab_ss:
         st.markdown(fbox("Formule", "SS = Z × σD × √L",
-                         "Z = facteur service · σD = écart-type demande (u/j) · L = délai (j) · Délais : Export=120j · Local=14j · BM=21j"), unsafe_allow_html=True)
+                         "Z = facteur service · σD = écart-type demande (u/j) · L = délai (j) · Délais : Export=120j · Local=14j · BM=21j",
+                         icon="bi-shield-fill-check"), unsafe_allow_html=True)
 
         c1, c2, c3 = st.columns(3)
         with c1:
@@ -1066,7 +1093,8 @@ def calculateurs():
 
     with tab_eoq:
         st.markdown(fbox("Modèle de Wilson", "EOQ = √(2×D×Sc / (Sh×Cu))",
-                         "D=demande annuelle · Sc=coût passation · Sh=taux stockage · Cu=coût unitaire"), unsafe_allow_html=True)
+                         "D=demande annuelle · Sc=coût passation · Sh=taux stockage · Cu=coût unitaire",
+                         icon="bi-calculator-fill"), unsafe_allow_html=True)
         c1, c2, c3 = st.columns(3)
         with c1:
             eD  = st.number_input("Demande annuelle (u)", value=12000, step=100,  key="eoq_D")
@@ -1144,7 +1172,8 @@ def calculateurs():
 
     with tab_rp:
         st.markdown(fbox("Formule", "PR = (Dmoy × LT) + SS",
-                         "Dmoy = demande/jour · LT = délai (j) · SS = stock de sécurité"), unsafe_allow_html=True)
+                         "Dmoy = demande/jour · LT = délai (j) · SS = stock de sécurité",
+                         icon="bi-flag-fill"), unsafe_allow_html=True)
         c1, c2, c3 = st.columns(3)
         with c1:
             src_rp = st.selectbox("Source", ["Export", "Local", "BM"], key="rp_src")
@@ -1160,11 +1189,11 @@ def calculateurs():
         PR = rd * lt_rp + rss
         dL = (rcu - rss) / rd if rd > 0 else 0
         if rcu <= rss:
-            st.markdown("<div class='alert-critical'>🔴 RUPTURE IMMINENTE — Commander immédiatement !</div>", unsafe_allow_html=True)
+            st.markdown("<div class='alert-critical'><span class='alert-icon'><i class='bi bi-exclamation-octagon-fill'></i></span><div>RUPTURE IMMINENTE — Commander immédiatement !</div></div>", unsafe_allow_html=True)
         elif rcu <= PR:
-            st.markdown("<div class='alert-warning'>🟡 COMMANDER MAINTENANT — Point de réappro. atteint</div>", unsafe_allow_html=True)
+            st.markdown("<div class='alert-warning'><span class='alert-icon'><i class='bi bi-exclamation-triangle-fill'></i></span><div>COMMANDER MAINTENANT — Point de réappro. atteint</div></div>", unsafe_allow_html=True)
         else:
-            st.markdown(f"<div class='alert-ok'>🟢 Stock suffisant — {fmtInt(rcu)} u > PR ({fmtInt(PR)} u)</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='alert-ok'><span class='alert-icon'><i class='bi bi-check-circle-fill'></i></span><div>Stock suffisant — {fmtInt(rcu)} u > PR ({fmtInt(PR)} u)</div>", unsafe_allow_html=True)
 
         c = st.columns(3)
         for i, (l, v, u, col) in enumerate([
@@ -1177,7 +1206,7 @@ def calculateurs():
 
 # ─────────────────────────────────────────────────────────────────────────────
 def alertes():
-    st.markdown("## 🔔 Alertes & Surveillance des stocks")
+    st.markdown('<h2><i class="bi bi-bell-fill" style="color:#dc3535;margin-right:10px"></i>Alertes &amp; Surveillance des stocks</h2>', unsafe_allow_html=True)
     st.markdown("<p style='color:#7a9a7a'>Deux types d'alertes : <strong>dépassement du stock de sécurité</strong> et <strong>déclenchement de commande</strong></p>", unsafe_allow_html=True)
 
     def clean_num(v):
@@ -1191,20 +1220,20 @@ def alertes():
     df_from_session = None
     if "df_resultats" in st.session_state and st.session_state["df_resultats"]:
         sheets_calc = list(st.session_state["df_resultats"].keys())
-        src_choice = st.radio("Source des données", ["📥 Depuis calcul automatique", "📂 Importer fichier XLSX"], horizontal=True)
+        src_choice = st.radio("Source des données", ["Depuis calcul automatique", "Importer fichier XLSX"], horizontal=True)
     else:
-        src_choice = "📂 Importer fichier XLSX"
+        src_choice = "Importer fichier XLSX"
 
     df_alerte_all = {}
 
-    if "calcul" in src_choice and "df_resultats" in st.session_state:
+    if "calcul automatique" in src_choice.lower() and "df_resultats" in st.session_state:
         for sheet_name, df_calc in st.session_state["df_resultats"].items():
             df_alerte_all[sheet_name] = df_calc.copy()
             df_alerte_all[sheet_name]["Stock sécurité calculé"] = df_calc["Stock sécurité"]
-        st.success(f"✅ Données chargées depuis le calcul automatique — {sum(len(v) for v in df_alerte_all.values())} articles")
+        st.success(f" Données chargées depuis le calcul automatique — {sum(len(v) for v in df_alerte_all.values())} articles")
     else:
         uploaded = st.file_uploader(
-            "📂 Importez le fichier XLSX exporté depuis le calcul automatique",
+            "Importez le fichier XLSX exporté depuis le calcul automatique",
             type=["xlsx", "xls"], key="alertes_upload")
 
         if uploaded:
@@ -1213,7 +1242,7 @@ def alertes():
                 sheet_names = list(all_raw.keys())
 
                 if len(sheet_names) > 1:
-                    st.info(f"📋 **{len(sheet_names)} feuilles détectées :** {', '.join(sheet_names)}")
+                    st.info(f" **{len(sheet_names)} feuilles détectées :** {', '.join(sheet_names)}")
                     feuille_alerte = st.radio("Feuille à analyser", sheet_names, horizontal=True, key="alerte_sheet_sel")
                     sheets_proc = [feuille_alerte]
                 else:
@@ -1246,21 +1275,21 @@ def alertes():
                     if "Code article" in df_m.columns:
                         df_m = df_m[df_m["Code article"].notna()]
                     df_alerte_all[sn] = df_m
-                    st.success(f"✅ Feuille **{sn}** : {len(df_m)} articles chargés")
+                    st.success(f"Feuille **{sn}** : {len(df_m)} articles chargés")
             except Exception as e:
                 st.error(f"Erreur : {e}")
 
     if not df_alerte_all:
-        st.info("⬆️ Lancez d'abord un **Calcul automatique** ou importez un fichier XLSX.")
+        st.info("<i class='bi bi-arrow-up-circle'></i> Lancez d'abord un **Calcul automatique** ou importez un fichier XLSX.")
         return
 
     for sheet_name, df in df_alerte_all.items():
         if len(df_alerte_all) > 1:
-            st.markdown(f"---\n### 📄 {sheet_name}")
+            st.markdown(f"---\n### <i class='bi bi-file-earmark-spreadsheet' style='color:#2d6a2d'></i> {sheet_name}")
 
         # ── Saisie stock actuel si manquant ──────────────────────────────────
         if "Stock actuel" not in df.columns or df["Stock actuel"].sum() == 0:
-            st.warning("⚠️ Saisissez le stock actuel pour chaque article :")
+            st.warning("Saisissez le stock actuel pour chaque article :")
             stk_vals = {}
             cols_stk = st.columns(min(4, len(df)))
             for i, (_, row) in enumerate(df.iterrows()):
@@ -1293,35 +1322,35 @@ def alertes():
             alerte_cmd = stk <= pr and not (stk + cmd > pr)  # Commander maintenant
 
             if stk <= 0 or stk < ss * 0.5:
-                return "🔴 Rupture critique"
+                return "Rupture critique"
             elif alerte_ss:
-                return "🟠 SS dépassé"
+                return "SS dépassé"
             elif alerte_cmd:
-                return "🟡 Commander maintenant"
+                return "Commander maintenant"
             else:
-                return "🟢 Normal"
+                return "Normal"
 
         df["Alerte"] = df.apply(get_alerte, axis=1)
 
         # Synthèse
-        rupt  = df[df["Alerte"] == "🔴 Rupture critique"]
-        ss_dep = df[df["Alerte"] == "🟠 SS dépassé"]
-        cmd_now = df[df["Alerte"] == "🟡 Commander maintenant"]
-        ok    = df[df["Alerte"] == "🟢 Normal"]
+        rupt  = df[df["Alerte"] == "Rupture critique"]
+        ss_dep = df[df["Alerte"] == "SS dépassé"]
+        cmd_now = df[df["Alerte"] == "Commander maintenant"]
+        ok    = df[df["Alerte"] == "Normal"]
 
         c1, c2, c3, c4 = st.columns(4)
-        with c1: st.markdown(mcard("🔴 Rupture critique",   str(len(rupt)),    "articles",  color=C_RED),    unsafe_allow_html=True)
-        with c2: st.markdown(mcard("🟠 SS dépassé",          str(len(ss_dep)),  "articles",  color="#e65100"), unsafe_allow_html=True)
-        with c3: st.markdown(mcard("🟡 Commander maintenant", str(len(cmd_now)), "articles",  color=C_GOLD),   unsafe_allow_html=True)
-        with c4: st.markdown(mcard("🟢 Normal",              str(len(ok)),      "articles",  color=C_GREEN2), unsafe_allow_html=True)
+        with c1: st.markdown(mcard("Rupture critique",    str(len(rupt)),    "articles",  color=C_RED,    icon="bi-x-octagon-fill"),    unsafe_allow_html=True)
+        with c2: st.markdown(mcard("SS dépassé",          str(len(ss_dep)),  "articles",  color="#e65100", icon="bi-exclamation-triangle-fill"), unsafe_allow_html=True)
+        with c3: st.markdown(mcard("Commander maintenant", str(len(cmd_now)), "articles",  color=C_GOLD,   icon="bi-cart-plus-fill"),   unsafe_allow_html=True)
+        with c4: st.markdown(mcard("Normal",              str(len(ok)),      "articles",  color=C_GREEN2, icon="bi-check-circle"),  unsafe_allow_html=True)
 
         st.divider()
 
         # Tableau
         filtre = st.multiselect(
             "Filtrer par alerte",
-            options=["🔴 Rupture critique", "🟠 SS dépassé", "🟡 Commander maintenant", "🟢 Normal"],
-            default=["🔴 Rupture critique", "🟠 SS dépassé", "🟡 Commander maintenant"],
+            options=["Rupture critique", "SS dépassé", "Commander maintenant", "Normal"],
+            default=["Rupture critique", "SS dépassé", "Commander maintenant"],
             key=f"filtre_{sheet_name}")
 
         df_show = df[df["Alerte"].isin(filtre)] if filtre else df
@@ -1337,10 +1366,10 @@ def alertes():
         # Graphique alertes
         if stk_col in df.columns and ss_col in df.columns:
             st.markdown("---")
-            st.markdown("#### 📈 Stock actuel vs Stock de sécurité vs Point de commande")
+            st.markdown('<h4><i class="bi bi-graph-up" style="color:#2d6a2d;margin-right:8px"></i>Stock actuel vs Stock de sécurité vs Point de commande</h4>', unsafe_allow_html=True)
             labels = df["Code article"].astype(str).tolist()
-            color_map = {"🔴 Rupture critique": C_RED, "🟠 SS dépassé": "#e65100",
-                          "🟡 Commander maintenant": C_GOLD, "🟢 Normal": C_GREEN2}
+            color_map = {"Rupture critique": C_RED, "SS dépassé": "#e65100",
+                          "Commander maintenant": C_GOLD, "Normal": C_GREEN2}
             bar_colors = [color_map.get(a, C_GREEN2) for a in df["Alerte"]]
             fig = go.Figure()
             fig.add_trace(go.Bar(name="Stock actuel", x=labels, y=df[stk_col], marker_color=bar_colors))
@@ -1358,24 +1387,24 @@ def alertes():
 
         # Détail alertes critiques
         st.divider()
-        st.markdown("#### 🚨 Actions prioritaires")
+        st.markdown('<h4><i class="bi bi-lightning-charge-fill" style="color:#dc3535;margin-right:8px"></i>Actions prioritaires</h4>', unsafe_allow_html=True)
         if len(rupt) == 0 and len(ss_dep) == 0 and len(cmd_now) == 0:
-            st.markdown("<div class='alert-ok'>✅ Aucune alerte — tous les stocks sont suffisants.</div>", unsafe_allow_html=True)
+            st.markdown("<div class='alert-ok'><span class='alert-icon'><i class='bi bi-check-circle-fill'></i></span><div>Aucune alerte — tous les stocks sont suffisants.</div></div>", unsafe_allow_html=True)
 
         for _, r in rupt.iterrows():
             stk = clean_num(r.get(stk_col, 0)); ss = clean_num(r.get(ss_col, 0))
             st.markdown(
-                f"<div class='alert-critical'>🔴 <strong>{r.get('Code article','')} — {r.get('Description Article','')}</strong><br/>"
+                f"<div class='alert-critical'><span class='alert-icon'><i class='bi bi-x-octagon-fill'></i></span><div><strong>{r.get('Code article','')} — {r.get('Description Article','')}</strong><br/>"
                 f"<span style='font-size:.85rem'>Stock actuel : <strong>{stk:,.0f}</strong> u | SS : {ss:,.0f} u | "
-                f"Écart : <strong>{stk-ss:,.0f}</strong> u — Commander immédiatement !</span></div>",
+                f"Écart : <strong>{stk-ss:,.0f}</strong> u — Commander immédiatement !</span></div></div>",
                 unsafe_allow_html=True)
 
         for _, r in ss_dep.iterrows():
             stk = clean_num(r.get(stk_col, 0)); ss = clean_num(r.get(ss_col, 0))
             pr  = clean_num(r.get(pr_col, 0))
             st.markdown(
-                f"<div class='alert-warning'>🟠 <strong>{r.get('Code article','')} — {r.get('Description Article','')}</strong><br/>"
-                f"<span style='font-size:.85rem'>Stock : {stk:,.0f} u | SS : {ss:,.0f} u | PR : {pr:,.0f} u — Stock de sécurité entamé</span></div>",
+                f"<div class='alert-warning'><span class='alert-icon'><i class='bi bi-exclamation-triangle-fill'></i></span><div><strong>{r.get('Code article','')} — {r.get('Description Article','')}</strong><br/>"
+                f"<span style='font-size:.85rem'>Stock : {stk:,.0f} u | SS : {ss:,.0f} u | PR : {pr:,.0f} u — Stock de sécurité entamé</span></div></div>",
                 unsafe_allow_html=True)
 
         for _, r in cmd_now.iterrows():
@@ -1383,8 +1412,8 @@ def alertes():
             src = r.get("Source", "")
             lt  = get_lt_jours(src) if src else "?"
             st.markdown(
-                f"<div class='alert-info'>🟡 <strong>{r.get('Code article','')} — {r.get('Description Article','')}</strong><br/>"
-                f"<span style='font-size:.85rem'>Stock : {stk:,.0f} u ≤ PR : {pr:,.0f} u | Délai : {lt}j — Lancer la commande maintenant</span></div>",
+                f"<div class='alert-info'><span class='alert-icon'><i class='bi bi-info-circle-fill'></i></span><div><strong>{r.get('Code article','')} — {r.get('Description Article','')}</strong><br/>"
+                f"<span style='font-size:.85rem'>Stock : {stk:,.0f} u ≤ PR : {pr:,.0f} u | Délai : {lt}j — Lancer la commande maintenant</span></div></div>",
                 unsafe_allow_html=True)
 
 
@@ -1444,7 +1473,7 @@ def get_catalogue_options():
 
 # ─────────────────────────────────────────────────────────────────────────────
 def evolution_gains():
-    st.markdown("## 📈 Évolution SS & Évaluation des gains")
+    st.markdown('<h2><i class="bi bi-graph-up-arrow" style="color:#2d6a2d;margin-right:10px"></i>Évolution SS &amp; Évaluation des gains</h2>', unsafe_allow_html=True)
     st.markdown(
         "<p style='color:#7a9a7a'>"
         "Saisissez un code article — la description se remplit automatiquement. "
@@ -1479,7 +1508,7 @@ def evolution_gains():
     all_codes_list = sorted(catalogue_map.keys())
 
     # Afficher mini-catalogue en sidebar pour référence
-    with st.expander("📋 Catalogue articles disponibles — cliquez pour voir les codes", expanded=False):
+    with st.expander("Catalogue articles disponibles — cliquez pour voir les codes", expanded=False):
         rows_cat = [{"Code": c, "Description": catalogue_map[c]["description"],
                      "Source": catalogue_map[c].get("source",""),
                      "SS calculé": f"{int(catalogue_map[c]['ss_calcule'])} u" if catalogue_map[c].get("ss_calcule") else "—"}
@@ -1491,9 +1520,9 @@ def evolution_gains():
                 "Source":      st.column_config.TextColumn("Source"),
                 "SS calculé":  st.column_config.TextColumn("SS calculé"),
             })
-        st.caption("💡 Copiez-collez le code dans le tableau de saisie ci-dessous")
+        st.markdown("<small style='color:#7a9a7a'><i class='bi bi-info-circle' style='color:#2d6a2d'></i> Copiez-collez le code dans le tableau de saisie ci-dessous</small>", unsafe_allow_html=True)
 
-    tab1, tab2 = st.tabs(["📊 Évolution temporelle SS", "💰 Évaluation des gains"])
+    tab1, tab2 = st.tabs(["Évolution temporelle SS", "Évaluation des gains"])
 
     # ══════════════════════════════════════════════════════════════════════════
     # TAB 1 — ÉVOLUTION SS
@@ -1512,7 +1541,7 @@ def evolution_gains():
             mois_ev.append(f"{MOIS_ABREV[m-1]} {y}")
 
         st.divider()
-        st.markdown("#### ✏️ Saisissez les codes articles à suivre")
+        st.markdown('<h4><i class="bi bi-keyboard" style="color:#2d6a2d;margin-right:8px"></i>Saisissez les codes articles à suivre</h4>', unsafe_allow_html=True)
         st.caption("Tapez le code → la description et les valeurs SS se remplissent automatiquement. Modifiez les valeurs SS mois par mois.")
 
         # Initialiser session state pour le tableau évolution
@@ -1565,7 +1594,7 @@ def evolution_gains():
                     df_ev_updated.at[i, "SS avant (u)"]  = int(ss_calc * 1.3)
                     changed = True
             elif code_saisi and code_saisi not in catalogue_map and df_ev_updated.at[i, "Description"] == "":
-                df_ev_updated.at[i, "Description"] = "⚠️ Code non trouvé dans le catalogue"
+                df_ev_updated.at[i, "Description"] = "Code non trouvé dans le catalogue"
                 changed = True
 
         if changed:
@@ -1579,7 +1608,7 @@ def evolution_gains():
             st.info("Saisissez au moins un code article dans le tableau ci-dessus.")
         else:
             st.divider()
-            st.markdown("#### 📅 Valeurs SS mensuelles observées")
+            st.markdown('<h4><i class="bi bi-calendar3" style="color:#2d6a2d;margin-right:8px"></i>Valeurs SS mensuelles observées</h4>', unsafe_allow_html=True)
             st.caption("Saisissez la valeur du SS réel (ou théorique) pour chaque mois.")
 
             mois_cols_cfg = {m: st.column_config.NumberColumn(m, min_value=0, step=10) for m in mois_ev}
@@ -1610,7 +1639,7 @@ def evolution_gains():
                 }
             )
 
-            if st.button("📊 Générer le graphique d'évolution", key="ev_btn"):
+            if st.button("Générer le graphique d'évolution", key="ev_btn"):
                 fig = go.Figure()
                 colors_cycle = [C_GREEN, C_GOLD, C_GREEN2, C_PURPLE, C_RED, C_MUTED]
                 for i, (_, art_row) in enumerate(articles_ev.iterrows()):
@@ -1654,10 +1683,11 @@ def evolution_gains():
             fbox("Formule du gain annuel",
                  "Gain = (SS_avant − SS_calculé) × Coût_unitaire × Taux_stockage",
                  "Capital libéré = (SS_avant − SS_calculé) × Coût_unitaire · "
-                 "Gain annuel = Capital libéré × Taux_stockage"),
+                 "Gain annuel = Capital libéré × Taux_stockage",
+                 icon="bi-piggy-bank-fill"),
             unsafe_allow_html=True)
 
-        st.markdown("#### ✏️ Tableau de saisie — codes articles")
+        st.markdown('<h4><i class="bi bi-keyboard" style="color:#2d6a2d;margin-right:8px"></i>Tableau de saisie — codes articles</h4>', unsafe_allow_html=True)
         st.caption("Tapez le code → Description, Coût unitaire, SS calculé et Taux stockage se remplissent automatiquement.")
 
         # Initialiser tableau gains
@@ -1723,7 +1753,7 @@ def evolution_gains():
                         df_gain_updated.at[i, "SS avant (u)"] = int(ss_calc * 1.3)
                         changed_g = True
             elif code_saisi and code_saisi not in catalogue_map:
-                msg = "⚠️ Code non trouvé"
+                msg = "Code non trouvé"
                 if df_gain_updated.at[i, "Description"] != msg:
                     df_gain_updated.at[i, "Description"] = msg
                     changed_g = True
@@ -1735,7 +1765,7 @@ def evolution_gains():
         # ── Aperçu enrichi ────────────────────────────────────────────────────
         articles_gain = df_gain_updated[
             (df_gain_updated["Code article"].astype(str).str.strip() != "") &
-            (~df_gain_updated["Description"].astype(str).str.startswith("⚠️"))
+            (~df_gain_updated["Description"].astype(str).str.startswith("Code non trouvé"))
         ].copy()
 
         if articles_gain.empty:
@@ -1746,13 +1776,13 @@ def evolution_gains():
             n_tot = len(df_gain_updated[df_gain_updated["Code article"].astype(str).str.strip() != ""])
             n_ss  = (articles_gain["SS calculé (u)"] != 350).sum()
             c1, c2, c3 = st.columns(3)
-            with c1: st.markdown(mcard("Articles reconnus", f"{n_ok}/{n_tot}", "du catalogue", color=C_GREEN),  unsafe_allow_html=True)
-            with c2: st.markdown(mcard("SS pré-remplis",    str(n_ss),         "depuis calcul auto", color=C_GREEN2), unsafe_allow_html=True)
-            with c3: st.markdown(mcard("Articles à saisir", str(n_ok - n_ss),  "SS à compléter manuellement", color=C_GOLD), unsafe_allow_html=True)
+            with c1: st.markdown(mcard("Articles reconnus", f"{n_ok}/{n_tot}", "du catalogue", color=C_GREEN, icon="bi-person-check"), unsafe_allow_html=True)
+            with c2: st.markdown(mcard("SS pré-remplis",      str(n_ss),         "depuis calcul auto", color=C_GREEN2, icon="bi-magic"), unsafe_allow_html=True)
+            with c3: st.markdown(mcard("Articles à saisir",   str(n_ok - n_ss),  "SS à compléter manuellement", color=C_GOLD, icon="bi-pencil"), unsafe_allow_html=True)
 
             st.divider()
 
-            if st.button("💰 Calculer les gains", key="btn_gain_calc"):
+            if st.button("Calculer les gains", key="btn_gain_calc"):
                 rows_result = []
                 for _, r in articles_gain.iterrows():
                     delta    = int(r["SS avant (u)"]) - int(r["SS calculé (u)"])
@@ -1768,9 +1798,9 @@ def evolution_gains():
                         "Taux stockage":         f"{float(r['Taux stockage'])*100:.0f}%",
                         "Capital libéré (TND)":  round(cap_lib, 2),
                         "Gain annuel (TND)":     round(gain_an, 2),
-                        "Statut":                ("🟢 Économie" if delta > 0
-                                                  else "🔴 Surstock" if delta < 0
-                                                  else "⚪ Inchangé"),
+                        "Statut":                ("Économie" if delta > 0
+                                                  else "Surstock" if delta < 0
+                                                  else "Inchangé"),
                     })
 
                 df_result = pd.DataFrame(rows_result)
@@ -1786,15 +1816,15 @@ def evolution_gains():
 
                 total_cap  = df_result["Capital libéré (TND)"].sum()
                 total_gain = df_result["Gain annuel (TND)"].sum()
-                n_eco      = (df_result["Statut"] == "🟢 Économie").sum()
-                n_surs     = (df_result["Statut"] == "🔴 Surstock").sum()
+                n_eco      = (df_result["Statut"] == "Économie").sum()
+                n_surs     = (df_result["Statut"] == "Surstock").sum()
 
                 st.divider()
                 c1,c2,c3,c4 = st.columns(4)
-                with c1: st.markdown(mcard("Capital libéré",    f"{total_cap:,.0f}",  "TND",     color=C_GREEN2), unsafe_allow_html=True)
-                with c2: st.markdown(mcard("Gain annuel total", f"{total_gain:,.0f}", "TND/an",  color=C_GOLD),   unsafe_allow_html=True)
-                with c3: st.markdown(mcard("Articles optimisés", str(n_eco), f"/ {len(df_result)}", color=C_GREEN), unsafe_allow_html=True)
-                with c4: st.markdown(mcard("En surstock",        str(n_surs), "SS calc > SS avant",  color=C_RED),  unsafe_allow_html=True)
+                with c1: st.markdown(mcard("Capital libéré",    f"{total_cap:,.0f}",  "TND",     color=C_GREEN2, icon="bi-piggy-bank-fill"), unsafe_allow_html=True)
+                with c2: st.markdown(mcard("Gain annuel total", f"{total_gain:,.0f}", "TND/an",  color=C_GOLD, icon="bi-trending-up"), unsafe_allow_html=True)
+                with c3: st.markdown(mcard("Articles optimisés",  str(n_eco), f"/ {len(df_result)}", color=C_GREEN, icon="bi-check2-all"), unsafe_allow_html=True)
+                with c4: st.markdown(mcard("En surstock",         str(n_surs), "SS calc > SS avant",  color=C_RED,  icon="bi-exclamation-circle"),  unsafe_allow_html=True)
 
                 # Graphiques
                 fig_g = go.Figure()
@@ -1824,7 +1854,7 @@ def evolution_gains():
                     df_result.to_excel(writer, index=False, sheet_name="Gains SS")
                 buf_gain.seek(0)
                 st.download_button(
-                    label="⬇️ Exporter le rapport des gains",
+                    label="Exporter le rapport des gains",
                     data=buf_gain,
                     file_name=f"gains_ss_{date.today()}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -1848,11 +1878,11 @@ with st.sidebar:
     st.divider()
 
     pg = st.navigation([
-        st.Page(accueil,         title="Accueil",               icon="🏠"),
-        st.Page(import_calcul,   title="Calcul automatique",    icon="📥"),
-        st.Page(calculateurs,    title="Calculateurs SC",        icon="⚙️"),
-        st.Page(alertes,         title="Alertes & Stocks",       icon="🔔"),
-        st.Page(evolution_gains, title="Évolution & Gains",      icon="📈"),
+        st.Page(accueil,         title="Accueil",               icon=":material/home:"),
+        st.Page(import_calcul,   title="Calcul automatique",    icon=":material/upload_file:"),
+        st.Page(calculateurs,    title="Calculateurs SC",        icon=":material/calculate:"),
+        st.Page(alertes,         title="Alertes & Stocks",       icon=":material/notifications:"),
+        st.Page(evolution_gains, title="Évolution & Gains",      icon=":material/trending_up:"),
     ])
 
 with st.sidebar:
