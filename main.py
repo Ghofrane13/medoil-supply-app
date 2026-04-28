@@ -1885,18 +1885,6 @@ with st.sidebar:
         st.Page(evolution_gains, title="Évolution & Gains",      icon=":material/trending_up:"),
     ])
 
-with st.sidebar:
-    st.divider()
-    st.markdown("""
-    <div style='font-size:.72rem;color:#3a5a3a'>
-        <div style='color:#f5c518;margin-bottom:4px'>⏱ Délais fixes</div>
-        <div>Export : 4 mois (120j)</div>
-        <div>Local : 2 sem. (14j)</div>
-        <div>BM : 3 sem. (21j)</div>
-    </div>
-    """, unsafe_allow_html=True)
-    st.divider()
-    st.markdown("<p style='color:#4a6a4a;font-size:.72rem;'>© 2025 Medoil — Tous droits réservés</p>",
-                unsafe_allow_html=True)
+
 
 pg.run()
