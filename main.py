@@ -11,7 +11,7 @@ from openpyxl.utils import get_column_letter
 from datetime import datetime, date
 import calendar
 
-st.set_page_config(page_title="MedOil SC", page_icon="🍃", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="MedOil SC", page_icon="📈", layout="wide", initial_sidebar_state="expanded")
 
 # Inject Bootstrap Icons CDN — must be first, before any other st.markdown
 st.markdown("""
