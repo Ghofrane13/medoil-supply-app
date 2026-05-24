@@ -1,5 +1,4 @@
-description="écriture du fichier corrigé"
-cat > /home/claude/medoil_sc_v3_corrected.py << 'PYEOF'
+
 import streamlit as st
 import math
 import pandas as pd
