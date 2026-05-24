@@ -1465,6 +1465,6 @@ def evolution_gains():
             column_config={
                 "Code article":     st.column_config.TextColumn("Code article", width="small"),
                 "Description":      st.column_config.TextColumn("Description (auto)", disabled=True, width="large"),
-                "SS avant (u)":     st.column_config.}
+                "SS avant (u)":     st.column_config.})
 
 pg.run()
