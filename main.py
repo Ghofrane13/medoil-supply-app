@@ -1,3 +1,5 @@
+description="écriture du fichier corrigé"
+cat > /home/claude/medoil_sc_v3_corrected.py << 'PYEOF'
 import streamlit as st
 import math
 import pandas as pd
@@ -210,36 +212,17 @@ hr { border-color: var(--border) !important; }
     border-radius: 4px !important;
 }
 
-/* Source selector pills */
-.source-pills {
-    display: flex;
-    gap: .5rem;
-    margin-bottom: 1rem;
-}
+.source-pills { display: flex; gap: .5rem; margin-bottom: 1rem; }
 .source-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: .4rem;
-    padding: .45rem 1rem;
-    border-radius: 20px;
-    font-size: .82rem;
-    font-weight: 600;
-    border: 2px solid transparent;
-    cursor: pointer;
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .45rem 1rem; border-radius: 20px; font-size: .82rem;
+    font-weight: 600; border: 2px solid transparent; cursor: pointer;
 }
-.source-pill-active {
-    background: var(--green-mid);
-    color: #fff;
-    border-color: var(--green-mid);
-}
-.source-pill-inactive {
-    background: #fff;
-    color: var(--text-mid);
-    border-color: var(--border);
-}
+.source-pill-active  { background: var(--green-mid); color: #fff; border-color: var(--green-mid); }
+.source-pill-inactive{ background: #fff; color: var(--text-mid); border-color: var(--border); }
 </style>""", unsafe_allow_html=True)
 
-# ── Plotly theme ──────────────────────────────────────────────────────────────
+# ── Plotly theme ───────────────────────────────────────────────────────────────
 def light_layout():
     return dict(
         paper_bgcolor="rgba(0,0,0,0)",
@@ -282,7 +265,10 @@ def fbox(title, formula, details, icon="bi-calculator"):
             f"<span class='f-eq'>{formula}</span><br/>"
             f"<span style='color:#7a9a7a'>{details}</span></div>")
 
-SOURCE_DELAIS = {"Export": 4 * 30, "Local": 14, "BM": 21}
+# ══════════════════════════════════════════════════════════════════════════════
+# SEUL CHANGEMENT : BM = 3 jours (Bir Mcherga) — Local reste 14j, Export 120j
+# ══════════════════════════════════════════════════════════════════════════════
+SOURCE_DELAIS = {"Export": 4 * 30, "Local": 14, "BM": 3}
 
 def get_lt_jours(source):
     return SOURCE_DELAIS.get(source, 30)
@@ -349,31 +335,9 @@ def build_excel_indicateurs(df_res):
         "#,##0","#,##0.00","#,##0","0.0","#,##0","#,##0","#,##0",
     ]
 
-    for i, row in df_res.iterrows():
-        r = i + 2
-        vals = [
-            row.get("Code article",""),row.get("Description Article",""),
-            row.get("Source",""),row.get("LT jours",0),
-            row.get("Classe ABC",""),row.get("Classe XYZ",""),row.get("Classe",""),
-            row.get("Conso mois moy",0),row.get("Conso min",0),row.get("Conso max",0),
-            row.get("Sigma mois",0),row.get("Sigma D (j)",0),row.get("CV",0),row.get("Conso annuelle",0),
-            row.get("Niveau service txt",""),row.get("Z val",0),
-            row.get("Coût unitaire",0),row.get("Cout passation art",0),row.get("Taux stockage art",0),
-            row.get("Stock sécurité",0),row.get("Coût SS",0),
-            row.get("EOQ",0),row.get("Nb cmd an",0),row.get("Point de commande",0),
-            row.get("Stock actuel",0),row.get("Commande en cours",0),
-        ]
-        for col, (val, nf) in enumerate(zip(vals, fmts), 1):
-            dat(ws.cell(r, col), val, nf)
-
     abc_fills = {"A": "E8F5E9", "B": "FFFDE7", "C": "F5F5F5"}
     for i, row in df_res.iterrows():
         fill_color = abc_fills.get(row.get("Classe ABC", "C"), "FFFFFF")
-        for col in range(1, len(headers) + 1):
-            ws.cell(i + 2, col).fill = PatternFill("solid", start_color=fill_color)
-            ws.cell(i + 2, col).border = brd
-            ws.cell(i + 2, col).font  = Font(size=9, name="Arial")
-            ws.cell(i + 2, col).alignment = Alignment(horizontal="center", vertical="center")
         vals = [
             row.get("Code article",""),row.get("Description Article",""),
             row.get("Source",""),row.get("LT jours",0),
@@ -386,9 +350,14 @@ def build_excel_indicateurs(df_res):
             row.get("EOQ",0),row.get("Nb cmd an",0),row.get("Point de commande",0),
             row.get("Stock actuel",0),row.get("Commande en cours",0),
         ]
+        r = i + 2
         for col, (val, nf) in enumerate(zip(vals, fmts), 1):
-            c = ws.cell(i + 2, col)
+            c = ws.cell(r, col)
             c.value = val
+            c.fill  = PatternFill("solid", start_color=fill_color)
+            c.border = brd
+            c.font  = Font(size=9, name="Arial")
+            c.alignment = Alignment(horizontal="center", vertical="center")
             if nf: c.number_format = nf
 
     widths = [14,32,10,8,8,8,8,14,12,12,14,14,8,14,14,6,14,16,14,14,14,10,8,16,14,16]
@@ -437,7 +406,7 @@ def detect_month_cols(columns):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PAGE : ACCUEIL  — délais cards supprimées
+# PAGE : ACCUEIL
 # ═══════════════════════════════════════════════════════════════════════════════
 def accueil():
     st.markdown("""
@@ -454,7 +423,6 @@ def accueil():
             Importez vos consommations 12 mois — SS, EOQ et alertes calculés automatiquement selon la source et la classe ABC.</p>
     </div>""", unsafe_allow_html=True)
 
-    # ── Modules disponibles (sans les cartes délais supprimées) ───────────────
     st.markdown("<div style='font-size:1rem;font-weight:700;color:#1a2e1a;margin-bottom:1rem;border-left:3px solid #f5c518;padding-left:10px'>Modules disponibles</div>", unsafe_allow_html=True)
     cols = st.columns(4)
     mods = [
@@ -521,7 +489,7 @@ def import_calcul():
 
 - **`Coût passation`** et **`Taux stockage`** sont propres à chaque article
 - Les colonnes mois : **Jan/Fév…**, **M1/M2…** ou **Janvier/Février…**
-- `Source` : **Export** (4 mois) · **Local** (2 sem.) · **BM** (3 sem.)
+- `Source` : **Export** (120j) · **Local** (14j) · **BM / Bir Mcherga** (3j)
 - Le **niveau de service** est attribué automatiquement : A→99% · B→95% · C→90%
 """)
 
@@ -733,11 +701,11 @@ def import_calcul():
         df_res["Classe ABC"] = classify_abc(df_res["Valeur annuelle"].tolist())
         df_res["Classe XYZ"] = classify_xyz(df_res["CV"].tolist())
         df_res["Classe"]     = df_res["Classe ABC"] + df_res["Classe XYZ"]
-        df_res["Z val"]             = df_res["Classe ABC"].map(Z_PAR_CLASSE)
+        df_res["Z val"]              = df_res["Classe ABC"].map(Z_PAR_CLASSE)
         df_res["Niveau service txt"] = df_res["Classe ABC"].map(NS_PAR_CLASSE)
-        df_res["Stock sécurité"]    = df_res.apply(lambda r: calc_ss(r["Sigma D (j)"], r["LT jours"], r["Z val"]), axis=1)
-        df_res["Coût SS"]           = (df_res["Stock sécurité"] * df_res["Coût unitaire"]).round(2)
-        df_res["Point de commande"] = df_res.apply(lambda r: calc_pr(r["D jour"], r["LT jours"], r["Stock sécurité"]), axis=1)
+        df_res["Stock sécurité"]     = df_res.apply(lambda r: calc_ss(r["Sigma D (j)"], r["LT jours"], r["Z val"]), axis=1)
+        df_res["Coût SS"]            = (df_res["Stock sécurité"] * df_res["Coût unitaire"]).round(2)
+        df_res["Point de commande"]  = df_res.apply(lambda r: calc_pr(r["D jour"], r["LT jours"], r["Stock sécurité"]), axis=1)
 
         # ── Section 1 — Analyse ───────────────────────────────────────────────
         st.divider()
@@ -925,24 +893,22 @@ def import_calcul():
             type="primary",
         )
 
-        # ── Sauvegarde session pour Alertes ───────────────────────────────────
         if "df_resultats" not in st.session_state:
             st.session_state["df_resultats"] = {}
         st.session_state["df_resultats"][sheet_name] = df_exp
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PAGE : CALCULATEURS SC  — onglet KPIs stock supprimé
+# PAGE : CALCULATEURS SC
 # ═══════════════════════════════════════════════════════════════════════════════
 def calculateurs():
     st.markdown('<h2><i class="bi bi-sliders" style="color:#2d6a2d;margin-right:10px"></i>Calculateurs Supply Chain</h2>', unsafe_allow_html=True)
 
-    # Seulement 3 onglets — KPIs stock supprimé
     tab_ss, tab_eoq, tab_rp = st.tabs(["Stock de sécurité", "EOQ (Wilson)", "Point de réappro."])
 
     with tab_ss:
         st.markdown(fbox("Formule", "SS = Z × σD × √L",
-                         "Z = facteur service · σD = écart-type demande (u/j) · L = délai (j) · Délais : Export=120j · Local=14j · BM=21j",
+                         "Z = facteur service · σD = écart-type demande (u/j) · L = délai (j) · Délais : Export=120j · Local=14j · BM=3j",
                          icon="bi-shield-fill-check"), unsafe_allow_html=True)
 
         c1, c2, c3 = st.columns(3)
@@ -1033,7 +999,7 @@ def calculateurs():
 
     with tab_rp:
         st.markdown(fbox("Formule", "PR = (Dmoy × LT) + SS",
-                         "Dmoy = demande/jour · LT = délai (j) · SS = stock de sécurité",
+                         "Dmoy = demande/jour · LT = délai (j) · SS = stock de sécurité · Délais : Export=120j · Local=14j · BM=3j",
                          icon="bi-flag-fill"), unsafe_allow_html=True)
         c1, c2, c3 = st.columns(3)
         with c1:
@@ -1066,7 +1032,7 @@ def calculateurs():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PAGE : ALERTES — chargement auto depuis calcul, sinon import XLSX
+# PAGE : ALERTES
 # ═══════════════════════════════════════════════════════════════════════════════
 def alertes():
     st.markdown('<h2><i class="bi bi-bell-fill" style="color:#dc3535;margin-right:10px"></i>Alertes &amp; Surveillance des stocks</h2>', unsafe_allow_html=True)
@@ -1081,13 +1047,11 @@ def alertes():
 
     df_alerte_all = {}
 
-    # ── Détection automatique des données de session ──────────────────────────
     has_session = ("df_resultats" in st.session_state and
                    bool(st.session_state["df_resultats"]))
 
     if has_session:
-        # Afficher un bandeau de confirmation bien visible
-        n_arts = sum(len(v) for v in st.session_state["df_resultats"].values())
+        n_arts   = sum(len(v) for v in st.session_state["df_resultats"].values())
         feuilles = list(st.session_state["df_resultats"].keys())
         st.markdown(
             f"<div class='alert-ok'>"
@@ -1104,16 +1068,12 @@ def alertes():
         src_choice = "Importer un fichier XLSX"
         st.info("Aucun calcul automatique en cours de session. Importez un fichier XLSX ou lancez d'abord un Calcul automatique.")
 
-    # ── Chargement depuis session ─────────────────────────────────────────────
     if has_session and "calcul automatique" in src_choice.lower():
         for sheet_name, df_calc in st.session_state["df_resultats"].items():
             df_tmp = df_calc.copy()
-            # S'assurer que la colonne SS a le bon nom
             if "Stock sécurité" in df_tmp.columns and "Stock sécurité calculé" not in df_tmp.columns:
                 df_tmp["Stock sécurité calculé"] = df_tmp["Stock sécurité"]
             df_alerte_all[sheet_name] = df_tmp
-
-    # ── Chargement depuis fichier XLSX ────────────────────────────────────────
     else:
         uploaded = st.file_uploader(
             "Importez le fichier XLSX exporté depuis le calcul automatique",
@@ -1164,9 +1124,6 @@ def alertes():
     if not df_alerte_all:
         return
 
-    # ═══════════════════════════════════════════════════════════════════════════
-    # TRAITEMENT DES ALERTES PAR FEUILLE
-    # ═══════════════════════════════════════════════════════════════════════════
     for sheet_name, df in df_alerte_all.items():
         if len(df_alerte_all) > 1:
             st.markdown(f'<hr/><h3><i class="bi bi-file-earmark-spreadsheet" style="color:#2d6a2d"></i> {sheet_name}</h3>', unsafe_allow_html=True)
@@ -1180,25 +1137,21 @@ def alertes():
             if col_needed not in df.columns:
                 df[col_needed] = 0
 
-        # ── Mise à jour du stock actuel si les données viennent de la session ─
         st.markdown('<h4><i class="bi bi-pencil-square" style="color:#2d6a2d;margin-right:8px"></i>Mettre à jour le stock actuel</h4>', unsafe_allow_html=True)
         st.caption("Les stocks actuel et commandes en cours sont issus du fichier importé — modifiez-les si nécessaire.")
 
-        # Tableau interactif de mise à jour des stocks
         stock_update_data = []
         for _, row in df.iterrows():
             stock_update_data.append({
-                "Code article":       str(row.get("Code article", "")),
-                "Description":        str(row.get("Description Article", ""))[:35],
-                "Stock actuel (u)":   float(clean_num(row.get(stk_col, 0))),
+                "Code article":          str(row.get("Code article", "")),
+                "Description":           str(row.get("Description Article", ""))[:35],
+                "Stock actuel (u)":      float(clean_num(row.get(stk_col, 0))),
                 "Commande en cours (u)": float(clean_num(row.get("Commande en cours", 0))),
             })
 
         df_stock_edit = pd.DataFrame(stock_update_data)
         edited_stocks = st.data_editor(
-            df_stock_edit,
-            use_container_width=True,
-            hide_index=True,
+            df_stock_edit, use_container_width=True, hide_index=True,
             key=f"stock_edit_{sheet_name}",
             column_config={
                 "Code article":          st.column_config.TextColumn("Code", disabled=True, width="small"),
@@ -1208,13 +1161,11 @@ def alertes():
             }
         )
 
-        # Réinjecter les stocks mis à jour
         code_to_stk = dict(zip(edited_stocks["Code article"].astype(str), edited_stocks["Stock actuel (u)"]))
         code_to_cmd = dict(zip(edited_stocks["Code article"].astype(str), edited_stocks["Commande en cours (u)"]))
         df[stk_col]             = df["Code article"].astype(str).map(code_to_stk).fillna(0)
         df["Commande en cours"] = df["Code article"].astype(str).map(code_to_cmd).fillna(0)
 
-        # ── Calcul des alertes ────────────────────────────────────────────────
         def get_alerte(row):
             stk = clean_num(row.get(stk_col, 0))
             ss  = clean_num(row.get(ss_col, 0))
@@ -1245,7 +1196,6 @@ def alertes():
 
         st.divider()
 
-        # ── Tableau filtrable ─────────────────────────────────────────────────
         filtre = st.multiselect(
             "Filtrer par niveau d'alerte",
             options=["Rupture critique","SS dépassé","Commander maintenant","Normal"],
@@ -1262,7 +1212,6 @@ def alertes():
         st.dataframe(df_show[[c for c in disp_cols if c in df_show.columns]],
                      use_container_width=True, hide_index=True)
 
-        # ── Graphique ─────────────────────────────────────────────────────────
         if stk_col in df.columns and ss_col in df.columns:
             st.markdown("---")
             st.markdown('<h4><i class="bi bi-graph-up" style="color:#2d6a2d;margin-right:8px"></i>Stock actuel vs Stock de sécurité vs Point de commande</h4>', unsafe_allow_html=True)
@@ -1284,7 +1233,6 @@ def alertes():
                 yaxis=dict(title="Unités", gridcolor="rgba(0,0,0,.06)"))
             st.plotly_chart(fig, use_container_width=True)
 
-        # ── Actions prioritaires ──────────────────────────────────────────────
         st.divider()
         st.markdown('<h4><i class="bi bi-lightning-charge-fill" style="color:#dc3535;margin-right:8px"></i>Actions prioritaires</h4>', unsafe_allow_html=True)
 
@@ -1518,131 +1466,6 @@ def evolution_gains():
             column_config={
                 "Code article":     st.column_config.TextColumn("Code article", width="small"),
                 "Description":      st.column_config.TextColumn("Description (auto)", disabled=True, width="large"),
-                "SS avant (u)":     st.column_config.NumberColumn("SS avant (u)", min_value=0, step=10),
-                "SS calculé (u)":   st.column_config.NumberColumn("SS calculé (u)", min_value=0, step=10),
-                "Coût unit. (TND)": st.column_config.NumberColumn("Coût unit. (TND)", min_value=0.0, step=0.01, format="%.4f"),
-                "Taux stockage":    st.column_config.NumberColumn("Taux stockage (0.20=20%)", min_value=0.0, max_value=1.0, step=0.01, format="%.2f"),
-            })
-
-        df_gain_updated = df_gain_input.copy()
-        changed_g = False
-        for i, row in df_gain_updated.iterrows():
-            code_saisi = str(row.get("Code article", "")).strip()
-            if code_saisi and code_saisi in catalogue_map:
-                desc_auto = code_to_desc.get(code_saisi, "")
-                cu_auto   = float(code_to_cu.get(code_saisi, 0.0) or 0.0)
-                tx_auto   = float(code_to_tx.get(code_saisi, 0.20) or 0.20)
-                ss_calc   = code_to_ss.get(code_saisi)
-                if df_gain_updated.at[i, "Description"] != desc_auto:
-                    df_gain_updated.at[i, "Description"] = desc_auto; changed_g = True
-                if cu_auto > 0 and df_gain_updated.at[i, "Coût unit. (TND)"] == 0.0:
-                    df_gain_updated.at[i, "Coût unit. (TND)"] = cu_auto; changed_g = True
-                if tx_auto and df_gain_updated.at[i, "Taux stockage"] == 0.20 and tx_auto != 0.20:
-                    df_gain_updated.at[i, "Taux stockage"] = tx_auto; changed_g = True
-                if ss_calc:
-                    if df_gain_updated.at[i, "SS calculé (u)"] == 350:
-                        df_gain_updated.at[i, "SS calculé (u)"] = int(ss_calc); changed_g = True
-                    if df_gain_updated.at[i, "SS avant (u)"] == 500:
-                        df_gain_updated.at[i, "SS avant (u)"] = int(ss_calc * 1.3); changed_g = True
-            elif code_saisi and code_saisi not in catalogue_map:
-                msg = "Code non trouvé"
-                if df_gain_updated.at[i, "Description"] != msg:
-                    df_gain_updated.at[i, "Description"] = msg; changed_g = True
-
-        if changed_g:
-            st.session_state["gain_table"] = df_gain_updated
-            st.rerun()
-
-        articles_gain = df_gain_updated[
-            (df_gain_updated["Code article"].astype(str).str.strip() != "") &
-            (~df_gain_updated["Description"].astype(str).str.startswith("Code non trouvé"))
-        ].copy()
-
-        if articles_gain.empty:
-            st.info("Saisissez des codes articles dans le tableau ci-dessus pour calculer les gains.")
-        else:
-            n_ok = len(articles_gain)
-            n_tot = len(df_gain_updated[df_gain_updated["Code article"].astype(str).str.strip() != ""])
-            n_ss  = (articles_gain["SS calculé (u)"] != 350).sum()
-            c1,c2,c3 = st.columns(3)
-            with c1: st.markdown(mcard("Articles reconnus", f"{n_ok}/{n_tot}", "du catalogue",          color=C_GREEN,  icon="bi-person-check"),  unsafe_allow_html=True)
-            with c2: st.markdown(mcard("SS pré-remplis",    str(n_ss),         "depuis calcul auto",    color=C_GREEN2, icon="bi-magic"),           unsafe_allow_html=True)
-            with c3: st.markdown(mcard("À compléter",       str(n_ok - n_ss),  "SS manuels requis",     color=C_GOLD,   icon="bi-pencil"),          unsafe_allow_html=True)
-
-            st.divider()
-            if st.button("Calculer les gains", key="btn_gain_calc"):
-                rows_result = []
-                for _, r in articles_gain.iterrows():
-                    delta   = int(r["SS avant (u)"]) - int(r["SS calculé (u)"])
-                    cap_lib = delta * float(r["Coût unit. (TND)"])
-                    gain_an = cap_lib * float(r["Taux stockage"])
-                    rows_result.append({
-                        "Code":                  r["Code article"],
-                        "Description":           r["Description"],
-                        "SS avant (u)":          int(r["SS avant (u)"]),
-                        "SS calculé (u)":        int(r["SS calculé (u)"]),
-                        "Réduction SS (u)":      delta,
-                        "Coût unit. (TND)":      round(float(r["Coût unit. (TND)"]), 4),
-                        "Taux stockage":         f"{float(r['Taux stockage'])*100:.0f}%",
-                        "Capital libéré (TND)":  round(cap_lib, 2),
-                        "Gain annuel (TND)":     round(gain_an, 2),
-                        "Statut":                ("Économie" if delta > 0 else "Surstock" if delta < 0 else "Inchangé"),
-                    })
-
-                df_result = pd.DataFrame(rows_result)
-                st.dataframe(df_result, use_container_width=True, hide_index=True)
-
-                total_cap  = df_result["Capital libéré (TND)"].sum()
-                total_gain = df_result["Gain annuel (TND)"].sum()
-                n_eco      = (df_result["Statut"] == "Économie").sum()
-                n_surs     = (df_result["Statut"] == "Surstock").sum()
-
-                st.divider()
-                c1,c2,c3,c4 = st.columns(4)
-                with c1: st.markdown(mcard("Capital libéré",    f"{total_cap:,.0f}",  "TND",    color=C_GREEN2, icon="bi-piggy-bank-fill"), unsafe_allow_html=True)
-                with c2: st.markdown(mcard("Gain annuel total", f"{total_gain:,.0f}", "TND/an", color=C_GOLD,   icon="bi-trending-up"),     unsafe_allow_html=True)
-                with c3: st.markdown(mcard("Optimisés",          str(n_eco), f"/ {len(df_result)}", color=C_GREEN, icon="bi-check2-all"),   unsafe_allow_html=True)
-                with c4: st.markdown(mcard("En surstock",        str(n_surs), "à réduire",   color=C_RED,   icon="bi-exclamation-circle"),  unsafe_allow_html=True)
-
-                fig_g = go.Figure()
-                fig_g.add_trace(go.Bar(name="SS avant",   x=df_result["Code"], y=df_result["SS avant (u)"],   marker_color=C_RED,   opacity=0.75))
-                fig_g.add_trace(go.Bar(name="SS calculé", x=df_result["Code"], y=df_result["SS calculé (u)"], marker_color=C_GREEN))
-                fig_g.update_layout(**light_layout(), barmode="group", height=300,
-                    xaxis=dict(title="Article"), yaxis=dict(title="SS (u)"), title="SS avant vs SS calculé")
-                st.plotly_chart(fig_g, use_container_width=True)
-
-                buf_gain = io.BytesIO()
-                with pd.ExcelWriter(buf_gain, engine="openpyxl") as writer:
-                    df_result.to_excel(writer, index=False, sheet_name="Gains SS")
-                buf_gain.seek(0)
-                st.download_button(label="Exporter le rapport des gains", data=buf_gain,
-                    file_name=f"gains_ss_{date.today()}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    key="dl_gain")
-
-
-# ── Sidebar ───────────────────────────────────────────────────────────────────
-with st.sidebar:
-    URL_LOGO = "https://raw.githubusercontent.com/Ghofrane13/medoil-supply-app/main/logo.png"
-    st.markdown(f"""
-    <div style="display:flex;align-items:center;padding:.3rem 0 .5rem">
-        <img src={URL_LOGO} style="width:44px;margin-right:10px;border-radius:6px">
-        <div>
-            <div style="color:#ffffff;font-weight:700;font-size:1.15rem;line-height:1.1">Med oil</div>
-            <div style="color:#f5c518;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase">Supply Chain · v3.0</div>
-        </div>
-    </div>""", unsafe_allow_html=True)
-    st.divider()
-
-    pg = st.navigation([
-        st.Page(accueil,         title="Accueil",            icon=":material/home:"),
-        st.Page(import_calcul,   title="Calcul automatique", icon=":material/upload_file:"),
-        st.Page(calculateurs,    title="Calculateurs SC",     icon=":material/calculate:"),
-        st.Page(alertes,         title="Alertes & Stocks",    icon=":material/notifications:"),
-        st.Page(evolution_gains, title="Évolution & Gains",   icon=":material/trending_up:"),
-    ])
-
-    st.markdown("<p style='color:#4a6a4a;font-size:.72rem;'>© 2025 Medoil — Tous droits réservés</p>",
-                unsafe_allow_html=True)
+                "SS avant (u)":     st.column_config.)
 
 pg.run()
