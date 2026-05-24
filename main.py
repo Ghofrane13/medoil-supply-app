@@ -282,7 +282,7 @@ def fbox(title, formula, details, icon="bi-calculator"):
             f"<span class='f-eq'>{formula}</span><br/>"
             f"<span style='color:#7a9a7a'>{details}</span></div>")
 
-SOURCE_DELAIS = {"Export": 4 * 30, "Local": 14, "BM": 21}
+SOURCE_DELAIS = {"Export": 4 * 30, "Local": 14, "BM": 3}
 
 def get_lt_jours(source):
     return SOURCE_DELAIS.get(source, 30)
