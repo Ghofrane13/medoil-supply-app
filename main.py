@@ -892,8 +892,7 @@ def import_calcul():
         n_A = (df_res["Classe ABC"]=="A").sum()
         with c1: st.markdown(mcard("Articles traités",  str(len(df_res)), "articles",         color=C_GREEN,  icon="bi-boxes"),            unsafe_allow_html=True)
         with c2: st.markdown(mcard("Coût total SS",     f"{df_res['Coût SS'].sum():,.0f}", "TND immobilisés", color=C_GOLD, icon="bi-currency-exchange"), unsafe_allow_html=True)
-        with c3: st.markdown(mcard("EOQ moyen",         fmtInt(df_res[df_res['EOQ']>0]['EOQ'].mean()), "u/cmd", color=C_GREEN2, icon="bi-arrow-repeat"),  unsafe_allow_html=True)
-        with c4: st.markdown(mcard("Articles classe A", str(n_A), f"/ {len(df_res)} → NS 99%", color=C_GREEN, icon="bi-star-fill"),         unsafe_allow_html=True)
+       
 
         # ── Section 4 — Export ────────────────────────────────────────────────
         st.divider()
@@ -927,14 +926,14 @@ def calculateurs():
 
     with tab_ss:
         st.markdown(fbox("Formule", "SS = Z × σD × √L",
-                         "Z = facteur service · σD = écart-type demande (u/j) · L = délai (j) · Délais : Export=120j · Local=14j · BM=21j",
+                         "Z = facteur service · σD = écart-type demande (u/j) · L = délai (j) · Délais : Export=120j · Local=14j · BM=3j",
                          icon="bi-shield-fill-check"), unsafe_allow_html=True)
 
         c1, c2, c3 = st.columns(3)
         with c1:
             source_ss = st.selectbox("Source approvisionnement", ["Export", "Local", "BM"], key="ss_source")
             lt_auto   = get_lt_jours(source_ss)
-            st.info(f"Délai automatique : **{lt_auto} jours**")
+            st.info(f"Délai  : **{lt_auto} jours**")
             sd  = st.number_input("Demande moy. (u/j)",          value=50.0, step=1.0, key="ss_sd")
             ss2 = st.number_input("Écart-type demande σD (u/j)", value=8.0,  step=0.5, key="ss_sigma")
         with c2:
@@ -1055,7 +1054,6 @@ def calculateurs():
 # ═══════════════════════════════════════════════════════════════════════════════
 def alertes():
     st.markdown('<h2><i class="bi bi-bell-fill" style="color:#dc3535;margin-right:10px"></i>Alertes &amp; Surveillance des stocks</h2>', unsafe_allow_html=True)
-    st.markdown("<p style='color:#7a9a7a'>Deux types d'alertes : <strong>dépassement du stock de sécurité</strong> et <strong>déclenchement de commande</strong></p>", unsafe_allow_html=True)
 
     def clean_num(v):
         if v is None: return 0.0
@@ -1074,12 +1072,7 @@ def alertes():
         # Afficher un bandeau de confirmation bien visible
         n_arts = sum(len(v) for v in st.session_state["df_resultats"].values())
         feuilles = list(st.session_state["df_resultats"].keys())
-        st.markdown(
-            f"<div class='alert-ok'>"
-            f"<span class='alert-icon'><i class='bi bi-lightning-charge-fill'></i></span>"
-            f"<div><strong>Indicateurs du calcul automatique disponibles</strong><br/>"
-            f"<span style='font-size:.85rem'>{n_arts} articles · Feuilles : {', '.join(feuilles)}</span></div></div>",
-            unsafe_allow_html=True)
+
 
         src_choice = st.radio(
             "Source des données pour les alertes",
@@ -1247,27 +1240,7 @@ def alertes():
         st.dataframe(df_show[[c for c in disp_cols if c in df_show.columns]],
                      use_container_width=True, hide_index=True)
 
-        # ── Graphique ─────────────────────────────────────────────────────────
-        if stk_col in df.columns and ss_col in df.columns:
-            st.markdown("---")
-            st.markdown('<h4><i class="bi bi-graph-up" style="color:#2d6a2d;margin-right:8px"></i>Stock actuel vs Stock de sécurité vs Point de commande</h4>', unsafe_allow_html=True)
-            labels    = df["Code article"].astype(str).tolist()
-            color_map = {"Rupture critique": C_RED, "SS dépassé": "#e65100",
-                          "Commander maintenant": C_GOLD, "Normal": C_GREEN2}
-            bar_colors = [color_map.get(a, C_GREEN2) for a in df["Alerte"]]
-            fig = go.Figure()
-            fig.add_trace(go.Bar(name="Stock actuel", x=labels, y=df[stk_col], marker_color=bar_colors))
-            fig.add_trace(go.Scatter(name="Stock sécurité", x=labels, y=df[ss_col],
-                mode="markers+lines", marker=dict(color=C_GOLD, size=9, symbol="diamond"),
-                line=dict(color=C_GOLD, width=2, dash="dash")))
-            if pr_col in df.columns:
-                fig.add_trace(go.Scatter(name="Point de commande", x=labels, y=df[pr_col],
-                    mode="markers+lines", marker=dict(color=C_RED, size=7, symbol="x"),
-                    line=dict(color=C_RED, width=1.5, dash="dot")))
-            fig.update_layout(**light_layout(), height=360,
-                xaxis=dict(tickangle=-45, gridcolor="rgba(0,0,0,.06)"),
-                yaxis=dict(title="Unités", gridcolor="rgba(0,0,0,.06)"))
-            st.plotly_chart(fig, use_container_width=True)
+
 
         # ── Actions prioritaires ──────────────────────────────────────────────
         st.divider()
