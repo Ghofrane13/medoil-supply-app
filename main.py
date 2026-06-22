@@ -468,8 +468,8 @@ def accueil():
          "Suivi SS · saisie par code · évaluation économies réalisées"),
     ]
       for col, (ic, accent, ti, de) in zip(cols, mods):
-            with col:
-                  st.markdown(
+        with col:
+            st.markdown(
                 f"<div style='background:#ffffff;border:1px solid #d4e0d4;border-radius:12px;padding:1.3rem;"
                 f"border-top:3px solid {accent};box-shadow:0 2px 8px rgba(26,61,26,.05)'>"
                 f"<div style='font-size:1.6rem;margin-bottom:10px'>{ic}</div>"
@@ -478,6 +478,8 @@ def accueil():
                 unsafe_allow_html=True)
    
    
+
+      
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
