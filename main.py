@@ -467,6 +467,16 @@ def accueil():
         ("<i class='bi bi-graph-up-arrow bi-xl' style='color:#4a8c3f'></i>", "#4a8c3f", "Évolution &amp; Gains",
          "Suivi SS · saisie par code · évaluation économies réalisées"),
     ]
+      for col, (ic, accent, ti, de) in zip(cols, mods):
+            with col:
+                  st.markdown(
+                f"<div style='background:#ffffff;border:1px solid #d4e0d4;border-radius:12px;padding:1.3rem;"
+                f"border-top:3px solid {accent};box-shadow:0 2px 8px rgba(26,61,26,.05)'>"
+                f"<div style='font-size:1.6rem;margin-bottom:10px'>{ic}</div>"
+                f"<div style='font-size:.9rem;font-weight:700;color:#1a2e1a;margin-bottom:6px'>{ti}</div>"
+                f"<div style='font-size:.78rem;color:#7a9a7a;line-height:1.55'>{de}</div></div>",
+                unsafe_allow_html=True)
+   
    
 
 
