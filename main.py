@@ -1298,7 +1298,7 @@ with st.sidebar:
         st.Page(import_calcul,   title="Calcul automatique", icon=":material/upload_file:"),
         st.Page(calculateurs,    title="Calculateurs SC",     icon=":material/calculate:"),
         st.Page(alertes,         title="Alertes & Stocks",    icon=":material/notifications:"),
-        st.Page(evolution_gains, title="Évolution & Gains",   icon=":material/trending_up:"),
+      
     ])
 
     st.markdown("<p style='color:#4a6a4a;font-size:.72rem;'>© 2025 Medoil — Tous droits réservés</p>",
