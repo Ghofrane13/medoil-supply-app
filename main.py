@@ -451,7 +451,6 @@ def accueil():
         <h1 style='font-family:"DM Serif Display",serif;font-size:3.3rem;color:#ffffff;margin:.4rem 0;line-height:1.25'>
             Pilotez votre <em style='color:#f5c518'>supply chain</em><br/>avec précision</h1>
         
-           </p>
     </div>""", unsafe_allow_html=True)
 
     # ── Modules disponibles (sans les cartes délais supprimées) ───────────────
@@ -459,13 +458,12 @@ def accueil():
     cols = st.columns(4)
     mods = [
         ("<i class='bi bi-upload bi-xl' style='color:#2d6a2d'></i>", "#2d6a2d", "Calcul automatique",
-         "Importez consommations 12 mois → SS · EOQ · ABC/XYZ → Export XLSX"),
+         "Importez consommations 12 mois vos indicateurs seront calculer"),
         ("<i class='bi bi-sliders bi-xl' style='color:#c9a000'></i>", "#c9a000", "Calculateurs SC",
-         "EOQ · SS · Point de réappro. avec courbes"),
+         "Vérifier vous valeurs pour vos articles critiques"),
         ("<i class='bi bi-bell-fill bi-xl' style='color:#dc3535'></i>", "#dc3535", "Alertes &amp; Stocks",
-         "Alertes rupture SS · Déclenchement commandes — utilise les indicateurs du calcul automatique"),
-        ("<i class='bi bi-graph-up-arrow bi-xl' style='color:#4a8c3f'></i>", "#4a8c3f", "Évolution &amp; Gains",
-         "Suivi SS · saisie par code · évaluation économies réalisées"),
+         "Alertes de rupture et de Déclenchement des commandes "),
+        
     ]
     for col, (ic, accent, ti, de) in zip(cols, mods):
         with col:
