@@ -448,10 +448,10 @@ def accueil():
         <div style='font-size:.7rem;color:#f5c518;letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px;
              background:rgba(245,197,24,.15);display:inline-block;padding:.3rem .8rem;border-radius:20px;
              border:1px solid rgba(245,197,24,.3)'><i class="bi bi-stars"></i> Outil supply chain manager · v3.0</div>
-        <h1 style='font-family:"DM Serif Display",serif;font-size:2.3rem;color:#ffffff;margin:.4rem 0;line-height:1.25'>
+        <h1 style='font-family:"DM Serif Display",serif;font-size:3.3rem;color:#ffffff;margin:.4rem 0;line-height:1.25'>
             Pilotez votre <em style='color:#f5c518'>supply chain</em><br/>avec précision</h1>
-        <p style='color:#a5c8a5;font-size:.95rem;margin:.8rem 0 1.4rem'>
-            Importez vos consommations 12 mois — SS, EOQ et alertes calculés automatiquement selon la source et la classe ABC.</p>
+        
+           </p>
     </div>""", unsafe_allow_html=True)
 
     # ── Modules disponibles (sans les cartes délais supprimées) ───────────────
@@ -520,7 +520,7 @@ def import_calcul():
 - **`Coût passation`** et **`Taux stockage`** sont propres à chaque article
 - Les colonnes mois : **Jan/Fév…**, **M1/M2…** ou **Janvier/Février…**
 - `Source` : **Export** (4 mois) · **Local** (2 sem.) · **BM** (3 sem.)
-- Le **niveau de service** est attribué automatiquement : A→99% · B→95% · C→90%
+- Le **niveau de service** est attribué automatiquement 
 """)
 
     st.divider()
@@ -607,7 +607,7 @@ def import_calcul():
         })
         demo.attrs["month_cols"] = [f"M{i+1}" for i in range(12)]
         all_sheets_data["Démo"] = demo
-        st.info("Données de démo chargées — 10 articles · 12 mois · coûts individuels inclus")
+        st.info("Données de démo chargées")
 
     if not all_sheets_data:
         return
@@ -885,20 +885,7 @@ def import_calcul():
                 "Commande en cours":   st.column_config.NumberColumn("Cmd en cours (u)", format="%d"),
             })
 
-        labels_g = df_res["Code article"].astype(str).tolist()
-        fig_g    = go.Figure()
-        fig_g.add_trace(go.Bar(name="Stock actuel", x=labels_g, y=df_res["Stock actuel"], marker_color=C_GREEN2))
-        fig_g.add_trace(go.Bar(name="EOQ",          x=labels_g, y=df_res["EOQ"],          marker_color=C_GREEN))
-        fig_g.add_trace(go.Scatter(name="Stock sécu.", x=labels_g, y=df_res["Stock sécurité"],
-            mode="markers+lines", marker=dict(color=C_GOLD, size=9, symbol="diamond"),
-            line=dict(color=C_GOLD, width=2, dash="dash")))
-        fig_g.add_trace(go.Scatter(name="Point commande", x=labels_g, y=df_res["Point de commande"],
-            mode="markers+lines", marker=dict(color=C_RED, size=8, symbol="x"),
-            line=dict(color=C_RED, width=1.5, dash="dot")))
-        fig_g.update_layout(**light_layout(), barmode="group", height=380,
-            xaxis=dict(title="Article", gridcolor="rgba(0,0,0,.06)"),
-            yaxis=dict(title="Unités",  gridcolor="rgba(0,0,0,.06)"))
-        st.plotly_chart(fig_g, use_container_width=True)
+        
 
         st.divider()
         c1,c2,c3,c4 = st.columns(4)
