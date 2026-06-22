@@ -455,7 +455,7 @@ def accueil():
 
     # ── Modules disponibles (sans les cartes délais supprimées) ───────────────
     st.markdown("<div style='font-size:1rem;font-weight:700;color:#1a2e1a;margin-bottom:1rem;border-left:3px solid #f5c518;padding-left:10px'>Modules disponibles</div>", unsafe_allow_html=True)
-    cols = st.columns(4)
+    cols = st.columns(3)
     mods = [
         ("<i class='bi bi-upload bi-xl' style='color:#2d6a2d'></i>", "#2d6a2d", "Calcul automatique",
          "Importez consommations 12 mois vos indicateurs seront calculer"),
@@ -471,7 +471,8 @@ def accueil():
                 f"<div style='background:#ffffff;border:1px solid #d4e0d4;border-radius:12px;padding:1.3rem;"
                 f"border-top:3px solid {accent};box-shadow:0 2px 8px rgba(26,61,26,.05)'>"
                 f"<div style='font-size:1.6rem;margin-bottom:10px'>{ic}</div>"
-                f"<div style='font-size:.9rem;font-weight:700;color:#1a2e1a;margin-bottom:6px'>{ti}</div>",
+                f"<div style='font-size:.9rem;font-weight:700;color:#1a2e1a;margin-bottom:6px'>{ti}</div>"
+            f"<div style='font-size:.78rem;color:#7a9a7a;line-height:1.55'>{de}</div></div>",
                 unsafe_allow_html=True)
 
 
