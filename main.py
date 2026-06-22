@@ -476,9 +476,6 @@ def accueil():
                 f"<div style='font-size:.9rem;font-weight:700;color:#1a2e1a;margin-bottom:6px'>{ti}</div>"
                 f"<div style='font-size:.78rem;color:#7a9a7a;line-height:1.55'>{de}</div></div>",
                 unsafe_allow_html=True)
-    st.divider()
-    st.info("**Flux recommandé :** Calcul automatique → Alertes &amp; Stocks (les indicateurs sont transmis automatiquement)")
-   
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
